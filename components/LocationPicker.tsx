@@ -18,12 +18,12 @@ export default function LocationPicker({
         height="300px"
         markers={
           lat != null && lng != null
-            ? [{ id: "picked", lat, lng, color: "#1d4ed8", label: "📍" }]
+            ? [{ id: "picked", lat, lng, color: "#171512", label: "●" }]
             : []
         }
         onMapClick={onPick}
       />
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-mute">
         {lat != null && lng != null
           ? `Pinned at ${lat.toFixed(4)}, ${lng.toFixed(4)} — click again to move the pin.`
           : "Click on the map to mark the exact location."}

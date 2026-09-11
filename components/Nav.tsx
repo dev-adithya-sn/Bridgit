@@ -31,14 +31,14 @@ export default function Nav() {
   }
 
   return (
-    <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-[1000] border-b border-ink bg-canvas/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 font-bold text-slate-900">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700 text-sm text-white">
+        <Link href="/" className="flex items-center gap-2 font-bold text-ink">
+          <span className="flex h-8 w-8 items-center justify-center bg-ink font-display text-sm text-canvas">
             JH
           </span>
-          <span className="hidden sm:block">
-            Sahayata<span className="text-blue-700">Setu</span>
+          <span className="hidden font-display text-lg tracking-wide sm:block">
+            SahayataSetu
           </span>
         </Link>
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
@@ -46,10 +46,10 @@ export default function Nav() {
             <Link
               key={l.href}
               href={l.href}
-              className={`whitespace-nowrap rounded-md px-3 py-1.5 font-medium ${
+              className={`whitespace-nowrap px-3 py-1.5 font-display font-medium ${
                 pathname.startsWith(l.href)
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-slate-600 hover:bg-slate-100"
+                  ? "bg-ink text-canvas"
+                  : "text-ink hover:bg-ink hover:text-canvas"
               }`}
             >
               {l.label}
@@ -57,22 +57,22 @@ export default function Nav() {
           ))}
         </nav>
         {!isSupabaseConfigured ? (
-          <span className="hidden rounded-md bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 md:block">
+          <span className="hidden border border-dashed border-ink px-2 py-1 text-xs font-medium text-ink md:block">
             Supabase not connected
           </span>
         ) : session ? (
           <div className="flex items-center gap-2">
             <div className="hidden text-right text-xs md:block">
-              <div className="font-semibold text-slate-800">
+              <div className="font-semibold text-ink">
                 {profile?.full_name || session.user.email}
               </div>
-              <div className="text-slate-500">
+              <div className="text-mute">
                 {profile ? ROLE_LABELS[profile.role] : ""}
               </div>
             </div>
             <button
               onClick={signOut}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="border border-ink px-3 py-1.5 text-sm font-medium text-ink hover:bg-ink hover:text-canvas"
             >
               Sign out
             </button>
@@ -81,13 +81,13 @@ export default function Nav() {
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="border border-ink px-3 py-1.5 text-sm font-medium text-ink hover:bg-ink hover:text-canvas"
             >
               Log in
             </Link>
             <Link
               href="/signup"
-              className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
+              className="bg-ink px-3 py-1.5 text-sm font-medium text-canvas hover:bg-ink/80"
             >
               Sign up
             </Link>

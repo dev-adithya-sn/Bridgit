@@ -1,26 +1,29 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Monochrome system — two tones + one warm mid-grey, nothing else.
+   canvas: off-white ground · ink: near-black · mute: warm mid-grey (secondary text)
+   Display type: Oswald (bold condensed, auto-uppercase) · Body: Inter */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-canvas: #f4f1ea;
+  --color-ink: #171512;
+  --color-mute: #857f74;
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-oswald);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f1ea;
+  color: #171512;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Condensed display type is always set tight and uppercase */
+.font-display {
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+/* Map imagery reads as black-and-white */
+.leaflet-tile-pane {
+  filter: grayscale(100%) contrast(1.05);
 }

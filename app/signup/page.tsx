@@ -40,10 +40,12 @@ export default function SignupPage() {
     router.push("/problems");
   }
 
+  const input = "w-full border border-ink bg-white px-3 py-2 outline-none";
+
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="text-2xl font-bold">Create your account</h1>
-      <p className="mt-1 text-sm text-slate-600">
+    <div className="mx-auto max-w-md px-4 py-10">
+      <h1 className="font-display text-3xl font-bold">Create your account</h1>
+      <p className="mt-1 text-sm text-mute">
         Pick the role that matches who you are — it shapes what you can do.
       </p>
       <form onSubmit={onSubmit} className="mt-5 space-y-4">
@@ -51,10 +53,10 @@ export default function SignupPage() {
           {ROLES.map((r) => (
             <label
               key={r.value}
-              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${
+              className={`flex cursor-pointer items-center gap-3 border p-3 ${
                 role === r.value
-                  ? "border-blue-600 bg-blue-50"
-                  : "border-slate-200 bg-white hover:border-slate-300"
+                  ? "border-ink bg-ink text-canvas"
+                  : "border-ink bg-canvas hover:bg-ink/5"
               }`}
             >
               <input
@@ -63,10 +65,13 @@ export default function SignupPage() {
                 value={r.value}
                 checked={role === r.value}
                 onChange={() => setRole(r.value)}
+                className="accent-ink"
               />
               <span>
-                <span className="block text-sm font-semibold">{r.label}</span>
-                <span className="block text-xs text-slate-500">{r.desc}</span>
+                <span className="block font-display text-sm font-semibold">{r.label}</span>
+                <span className={`block text-xs ${role === r.value ? "text-canvas/70" : "text-mute"}`}>
+                  {r.desc}
+                </span>
               </span>
             </label>
           ))}
@@ -76,7 +81,7 @@ export default function SignupPage() {
           placeholder="Full name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+          className={input}
         />
         {(role === "ngo" || role === "camp" || role === "university_team") && (
           <input
@@ -85,7 +90,7 @@ export default function SignupPage() {
             }
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+            className={input}
           />
         )}
         <input
@@ -94,7 +99,7 @@ export default function SignupPage() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+          className={input}
         />
         <input
           required
@@ -103,19 +108,19 @@ export default function SignupPage() {
           placeholder="Password (min 6 characters)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+          className={input}
         />
-        {error && <p className="text-sm text-rose-600">{error}</p>}
+        {error && <p className="bg-ink px-3 py-2 text-sm font-medium text-canvas">{error}</p>}
         <button
           disabled={busy}
-          className="w-full rounded-lg bg-blue-700 py-2.5 font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+          className="w-full bg-ink py-2.5 font-display font-semibold uppercase tracking-wide text-canvas hover:bg-ink/80 disabled:opacity-50"
         >
           {busy ? "Creating…" : "Sign up"}
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-slate-600">
+      <p className="mt-4 text-center text-sm text-mute">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-blue-700">
+        <Link href="/login" className="font-semibold text-ink underline underline-offset-2">
           Log in
         </Link>
       </p>

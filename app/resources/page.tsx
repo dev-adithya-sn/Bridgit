@@ -12,7 +12,7 @@ import { suggestMatches } from "@/lib/matching";
 import { StatusBadge, UrgencyBadge } from "@/components/Badges";
 import LocationPicker from "@/components/LocationPicker";
 
-const input = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2";
+const input = "w-full border border-ink bg-white px-3 py-2 outline-none";
 
 export default function ResourcesPage() {
   const router = useRouter();
@@ -152,47 +152,51 @@ export default function ResourcesPage() {
   );
 
   const filterSelect =
-    "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm";
+    "border border-ink bg-canvas px-2.5 py-1.5 text-sm outline-none";
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Resources &amp; Needs</h1>
-          <p className="text-sm text-slate-600">
-            Supply on the left, demand on the right. Posting a resource instantly
-            runs the smart matcher.
-          </p>
-        </div>
-        {session ? (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setForm(form === "resource" ? "none" : "resource")}
-              className="rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800"
-            >
-              + I have supplies
-            </button>
-            <button
-              onClick={() => setForm(form === "need" ? "none" : "need")}
-              className="rounded-lg border border-blue-700 px-4 py-2 font-semibold text-blue-700 hover:bg-blue-50"
-            >
-              + My camp needs
-            </button>
+      {/* Full-width black band: heading + post actions */}
+      <div className="border-b border-ink bg-ink text-canvas">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5">
+          <div>
+            <h1 className="font-display text-3xl font-bold">Resources &amp; Needs</h1>
+            <p className="text-sm text-canvas/70">
+              Supply on the left, demand on the right. Posting a resource instantly
+              runs the smart matcher.
+            </p>
           </div>
-        ) : (
-          !loading && (
-            <Link href="/login" className="font-semibold text-blue-700 underline">
-              Log in to post
-            </Link>
-          )
-        )}
+          {session ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setForm(form === "resource" ? "none" : "resource")}
+                className="bg-canvas px-4 py-2 font-display font-semibold text-ink hover:bg-canvas/80"
+              >
+                + I have supplies
+              </button>
+              <button
+                onClick={() => setForm(form === "need" ? "none" : "need")}
+                className="border border-canvas px-4 py-2 font-display font-semibold text-canvas hover:bg-canvas hover:text-ink"
+              >
+                + My camp needs
+              </button>
+            </div>
+          ) : (
+            !loading && (
+              <Link href="/login" className="font-semibold text-canvas underline">
+                Log in to post
+              </Link>
+            )
+          )}
+        </div>
       </div>
 
-      {error && <p className="mb-3 text-sm text-rose-600">{error}</p>}
+      <div className="mx-auto max-w-6xl px-4 py-6">
+      {error && <p className="mb-3 bg-ink px-3 py-2 text-sm font-medium text-canvas">{error}</p>}
 
       {form === "resource" && session && (
-        <form onSubmit={postResource} className="mb-6 rounded-xl border border-blue-200 bg-blue-50/50 p-5">
-          <h2 className="mb-3 font-bold">Post available supplies</h2>
+        <form onSubmit={postResource} className="mb-6 border border-ink bg-canvas p-5">
+          <h2 className="mb-3 font-display font-bold">Post available supplies</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm">
               <span className="mb-1 block font-medium">Type</span>
@@ -224,15 +228,15 @@ export default function ResourcesPage() {
             <LocationPicker lat={rLat} lng={rLng} onPick={(a, b) => { setRLat(a); setRLng(b); }} />
           </div>
           <button disabled={busy}
-            className="mt-4 rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 disabled:opacity-50">
+            className="mt-4 bg-ink px-4 py-2 font-display font-semibold uppercase tracking-wide text-canvas hover:bg-ink/80 disabled:opacity-50">
             {busy ? "Matching…" : "Post & find best matches →"}
           </button>
         </form>
       )}
 
       {form === "need" && session && (
-        <form onSubmit={postNeed} className="mb-6 rounded-xl border border-blue-200 bg-blue-50/50 p-5">
-          <h2 className="mb-3 font-bold">Post a camp need</h2>
+        <form onSubmit={postNeed} className="mb-6 border border-ink bg-canvas p-5">
+          <h2 className="mb-3 font-display font-bold">Post a camp need</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm sm:col-span-2">
               <span className="mb-1 block font-medium">Camp</span>
@@ -267,11 +271,11 @@ export default function ResourcesPage() {
                 Urgency: <strong>{URGENCY_LABELS[nUrgency]} ({nUrgency}/5)</strong>
               </span>
               <input type="range" min={1} max={5} value={nUrgency}
-                onChange={(e) => setNUrgency(Number(e.target.value))} className="w-full" />
+                onChange={(e) => setNUrgency(Number(e.target.value))} className="w-full accent-ink" />
             </label>
           </div>
           <button disabled={busy}
-            className="mt-4 rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 disabled:opacity-50">
+            className="mt-4 bg-ink px-4 py-2 font-display font-semibold uppercase tracking-wide text-canvas hover:bg-ink/80 disabled:opacity-50">
             {busy ? "Posting…" : "Post need"}
           </button>
         </form>
@@ -280,7 +284,7 @@ export default function ResourcesPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="font-bold text-slate-900">📦 Available supplies</h2>
+            <h2 className="font-display font-bold">Available supplies</h2>
             <select
               value={resourceTypeFilter}
               onChange={(e) => setResourceTypeFilter(e.target.value)}
@@ -294,25 +298,25 @@ export default function ResourcesPage() {
           </div>
           <div className="space-y-2">
             {visibleResources.length === 0 && (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-mute">
                 {resources.length === 0
                   ? "No supplies posted yet."
                   : `No ${typeLabel(resourceTypeFilter).toLowerCase()} supplies posted.`}
               </p>
             )}
             {visibleResources.map((r) => (
-              <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-4">
+              <div key={r.id} className="border border-ink bg-canvas p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold capitalize">{typeLabel(r.type)}</span>
                   <StatusBadge status={r.status} />
                 </div>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-mute">
                   {r.quantity_remaining.toLocaleString()} of {r.quantity.toLocaleString()} {r.unit} remaining
                   {r.district ? ` · from ${r.district}` : ""}
                   {r.donor_name ? ` · by ${r.donor_name}` : ""}
                 </p>
                 <Link href={`/matches?resource=${r.id}`}
-                  className="mt-1 inline-block text-sm font-semibold text-blue-700 hover:underline">
+                  className="mt-1 inline-block text-sm font-semibold text-ink underline underline-offset-2 hover:text-mute">
                   View matches →
                 </Link>
               </div>
@@ -322,7 +326,7 @@ export default function ResourcesPage() {
 
         <section>
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="font-bold text-slate-900">🆘 Camp needs</h2>
+            <h2 className="font-display font-bold">Camp needs</h2>
             <select
               value={needTypeFilter}
               onChange={(e) => setNeedTypeFilter(e.target.value)}
@@ -336,20 +340,20 @@ export default function ResourcesPage() {
           </div>
           <div className="space-y-2">
             {visibleNeeds.length === 0 && (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-mute">
                 {needs.length === 0
                   ? "No needs posted yet."
                   : `No ${typeLabel(needTypeFilter).toLowerCase()} needs posted.`}
               </p>
             )}
             {visibleNeeds.map((n) => (
-              <div key={n.id} className="rounded-xl border border-slate-200 bg-white p-4">
+              <div key={n.id} className="border border-ink bg-canvas p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold capitalize">{typeLabel(n.type)}</span>
                   <UrgencyBadge urgency={n.urgency} />
                   <StatusBadge status={n.status} />
                 </div>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-mute">
                   {n.camps?.name} ({n.camps?.district}) · needs{" "}
                   {(n.quantity_needed - n.quantity_received).toLocaleString()} {n.unit}
                   {n.quantity_received > 0 &&
@@ -360,6 +364,7 @@ export default function ResourcesPage() {
             ))}
           </div>
         </section>
+      </div>
       </div>
     </div>
   );

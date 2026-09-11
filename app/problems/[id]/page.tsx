@@ -44,12 +44,12 @@ export default function ProblemDetailPage() {
     else load();
   }
 
-  if (loading) return <p className="py-10 text-center text-slate-500">Loading…</p>;
+  if (loading) return <p className="py-10 text-center text-mute">Loading…</p>;
   if (!problem)
     return (
-      <p className="py-10 text-center text-slate-500">
+      <p className="py-10 text-center text-mute">
         Problem not found.{" "}
-        <Link href="/problems" className="text-blue-700 underline">
+        <Link href="/problems" className="text-ink underline">
           Back to board
         </Link>
       </p>
@@ -61,120 +61,128 @@ export default function ProblemDetailPage() {
   const isClaimer = session && problem.claimed_by === session.user.id;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <Link href="/problems" className="text-sm text-blue-700 hover:underline">
-        ← Back to Problem Board
-      </Link>
-      <div className="mt-3 rounded-xl border border-slate-200 bg-white p-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold">{problem.title}</h1>
-          <StatusBadge status={problem.status} />
-          <UrgencyBadge urgency={problem.urgency} />
+    <div>
+      {/* Black title band */}
+      <div className="border-b border-ink bg-ink text-canvas">
+        <div className="mx-auto max-w-3xl px-4 py-8">
+          <Link href="/problems" className="text-sm text-canvas/60 hover:text-canvas">
+            ← Back to Problem Board
+          </Link>
+          <h1 className="mt-2 font-display text-3xl font-bold leading-tight">{problem.title}</h1>
         </div>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-          <span>📍 {problem.district}{problem.ward ? ` · ${problem.ward}` : ""}</span>
-          <span>🏷 {problem.category}</span>
-          <span>👥 ~{problem.population_affected.toLocaleString()} affected</span>
-          {problem.poster_name && <span>✍️ Posted by {problem.poster_name}</span>}
-        </div>
-        <p className="mt-4 whitespace-pre-wrap text-slate-700">{problem.description}</p>
+      </div>
 
-        {problem.lat != null && problem.lng != null && (
-          <div className="mt-4">
-            <MapView
-              height="280px"
-              center={[problem.lat, problem.lng]}
-              zoom={12}
-              markers={[{
-                id: problem.id,
-                lat: problem.lat,
-                lng: problem.lng,
-                color: "#dc2626",
-                label: String(problem.urgency),
-              }]}
-            />
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <div className="border border-ink bg-canvas p-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={problem.status} />
+            <UrgencyBadge urgency={problem.urgency} />
           </div>
-        )}
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm uppercase text-mute">
+            <span>{problem.district}{problem.ward ? ` · ${problem.ward}` : ""}</span>
+            <span>{problem.category}</span>
+            <span>~{problem.population_affected.toLocaleString()} affected</span>
+            {problem.poster_name && <span>posted by {problem.poster_name}</span>}
+          </div>
+          <p className="mt-4 whitespace-pre-wrap">{problem.description}</p>
 
-        {problem.status !== "open" && (
-          <div className="mt-5 rounded-lg bg-slate-50 p-4 text-sm">
-            <p>
-              <strong>Claimed by:</strong> {problem.claimed_by_name ?? "a university team"}
-            </p>
-            {problem.solution && (
-              <p className="mt-2 whitespace-pre-wrap">
-                <strong>Proposed solution:</strong> {problem.solution}
+          {problem.lat != null && problem.lng != null && (
+            <div className="mt-4">
+              <MapView
+                height="280px"
+                center={[problem.lat, problem.lng]}
+                zoom={12}
+                markers={[{
+                  id: problem.id,
+                  lat: problem.lat,
+                  lng: problem.lng,
+                  color: "#171512",
+                  label: String(problem.urgency),
+                }]}
+              />
+            </div>
+          )}
+
+          {problem.status !== "open" && (
+            <div className="mt-5 border border-ink p-4 text-sm">
+              <p>
+                <strong>Claimed by:</strong> {problem.claimed_by_name ?? "a university team"}
+              </p>
+              {problem.solution && (
+                <p className="mt-2 whitespace-pre-wrap">
+                  <strong>Proposed solution:</strong> {problem.solution}
+                </p>
+              )}
+            </div>
+          )}
+
+          {error && <p className="mt-3 bg-ink px-3 py-2 text-sm font-medium text-canvas">{error}</p>}
+
+          {/* Actions by role and status */}
+          <div className="mt-5 space-y-4">
+            {!session && problem.status === "open" && (
+              <p className="text-sm text-mute">
+                <Link href="/login" className="font-semibold text-ink underline">
+                  Log in
+                </Link>{" "}
+                as a university team to claim this problem.
               </p>
             )}
-          </div>
-        )}
 
-        {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
-
-        {/* Actions by role and status */}
-        <div className="mt-5 space-y-4">
-          {!session && problem.status === "open" && (
-            <p className="text-sm text-slate-600">
-              <Link href="/login" className="font-semibold text-blue-700 underline">
-                Log in
-              </Link>{" "}
-              as a university team to claim this problem.
-            </p>
-          )}
-
-          {problem.status === "open" && isTeam && (
-            <button
-              disabled={busy}
-              onClick={() =>
-                update({
-                  status: "claimed",
-                  claimed_by: session!.user.id,
-                  claimed_by_name: profile?.org_name || profile?.full_name || "University team",
-                })
-              }
-              className="rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
-            >
-              Claim this problem
-            </button>
-          )}
-
-          {problem.status === "claimed" && isClaimer && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                update({ solution });
-              }}
-              className="space-y-2"
-            >
-              <label className="block text-sm font-medium">
-                {problem.solution ? "Update your solution" : "Submit your solution"}
-              </label>
-              <textarea
-                required
-                rows={4}
-                value={solution}
-                onChange={(e) => setSolution(e.target.value)}
-                placeholder="Describe your team's solution: what you'll do, resources needed, timeline…"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-              />
+            {problem.status === "open" && isTeam && (
               <button
                 disabled={busy}
-                className="rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+                onClick={() =>
+                  update({
+                    status: "claimed",
+                    claimed_by: session!.user.id,
+                    claimed_by_name: profile?.org_name || profile?.full_name || "University team",
+                  })
+                }
+                className="bg-ink px-4 py-2 font-display font-semibold uppercase tracking-wide text-canvas hover:bg-ink/80 disabled:opacity-50"
               >
-                Submit solution
+                Claim this problem
               </button>
-            </form>
-          )}
+            )}
 
-          {problem.status === "claimed" && problem.solution && (isPosterOrAdmin || isClaimer) && (
-            <button
-              disabled={busy}
-              onClick={() => update({ status: "resolved" })}
-              className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              Mark as resolved ✓
-            </button>
-          )}
+            {problem.status === "claimed" && isClaimer && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  update({ solution });
+                }}
+                className="space-y-2"
+              >
+                <label className="block text-sm font-medium">
+                  {problem.solution ? "Update your solution" : "Submit your solution"}
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={solution}
+                  onChange={(e) => setSolution(e.target.value)}
+                  placeholder="Describe your team's solution: what you'll do, resources needed, timeline…"
+                  className="w-full border border-ink bg-white px-3 py-2 outline-none"
+                />
+                <button
+                  disabled={busy}
+                  className="bg-ink px-4 py-2 font-display font-semibold uppercase tracking-wide text-canvas hover:bg-ink/80 disabled:opacity-50"
+                >
+                  Submit solution
+                </button>
+              </form>
+            )}
+
+            {problem.status === "claimed" && problem.solution && (isPosterOrAdmin || isClaimer) && (
+              <button
+                disabled={busy}
+                onClick={() => update({ status: "resolved" })}
+                className="border border-ink px-4 py-2 font-display font-semibold uppercase tracking-wide text-ink hover:bg-ink hover:text-canvas disabled:opacity-50"
+              >
+                Mark as resolved ✓
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

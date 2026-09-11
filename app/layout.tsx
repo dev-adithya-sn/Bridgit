@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Oswald, Inter } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import SetupNotice from "@/components/SetupNotice";
 
-const geist = Geist({ subsets: ["latin"] });
+const oswald = Oswald({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-oswald",
+});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "SahayataSetu — Disaster Response Platform for Jharkhand",
@@ -17,11 +22,14 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${geist.className} min-h-screen bg-slate-50 text-slate-900 antialiased`}>
+      <body
+        className={`${oswald.variable} ${inter.variable} min-h-screen bg-canvas font-sans text-ink antialiased`}
+      >
         <Nav />
         <SetupNotice />
-        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-        <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+        {/* Pages manage their own containers so full-width black bands can alternate with off-white ones */}
+        <main>{children}</main>
+        <footer className="border-t border-ink bg-ink py-6 text-center font-display text-xs tracking-wide text-canvas">
           SahayataSetu · Smart India Hackathon 2026 · PS SIH26043 · Govt. of Jharkhand
         </footer>
       </body>

@@ -26,16 +26,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="text-2xl font-bold">Log in</h1>
-      <form onSubmit={onSubmit} className="mt-5 space-y-4">
+    <div className="mx-auto max-w-md px-4 py-10">
+      <h1 className="font-display text-3xl font-bold">Log in</h1>
+      <form onSubmit={onSubmit} className="mt-5 space-y-4 border border-ink bg-canvas p-6">
         <input
           required
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+          className="w-full border border-ink bg-white px-3 py-2 outline-none"
         />
         <input
           required
@@ -43,19 +43,19 @@ export default function LoginPage() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+          className="w-full border border-ink bg-white px-3 py-2 outline-none"
         />
-        {error && <p className="text-sm text-rose-600">{error}</p>}
+        {error && <p className="bg-ink px-3 py-2 text-sm font-medium text-canvas">{error}</p>}
         <button
           disabled={busy}
-          className="w-full rounded-lg bg-blue-700 py-2.5 font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+          className="w-full bg-ink py-2.5 font-display font-semibold uppercase tracking-wide text-canvas hover:bg-ink/80 disabled:opacity-50"
         >
           {busy ? "Logging in…" : "Log in"}
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-slate-600">
+      <p className="mt-4 text-center text-sm text-mute">
         New here?{" "}
-        <Link href="/signup" className="font-semibold text-blue-700">
+        <Link href="/signup" className="font-semibold text-ink underline underline-offset-2">
           Create an account
         </Link>
       </p>

@@ -1,22 +1,23 @@
 import { URGENCY_LABELS } from "@/lib/types";
 
+// Monochrome: status reads through weight, not hue.
 export function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    open: "bg-emerald-100 text-emerald-800",
-    claimed: "bg-amber-100 text-amber-800",
-    resolved: "bg-slate-200 text-slate-600",
-    fulfilled: "bg-slate-200 text-slate-600",
-    suggested: "bg-blue-100 text-blue-800",
-    accepted: "bg-emerald-100 text-emerald-800",
-    delivered: "bg-slate-200 text-slate-600",
-    declined: "bg-rose-100 text-rose-800",
-    available: "bg-emerald-100 text-emerald-800",
-    allocated: "bg-slate-200 text-slate-600",
+    open: "border-ink bg-ink text-canvas",
+    claimed: "border-ink text-ink",
+    resolved: "border-mute text-mute line-through",
+    fulfilled: "border-mute text-mute line-through",
+    suggested: "border-ink border-dashed text-ink",
+    accepted: "border-ink bg-ink text-canvas",
+    delivered: "border-mute text-mute",
+    declined: "border-mute text-mute line-through",
+    available: "border-ink bg-ink text-canvas",
+    allocated: "border-mute text-mute",
   };
   return (
     <span
-      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
-        styles[status] ?? "bg-slate-100 text-slate-600"
+      className={`inline-block border px-2.5 py-0.5 text-xs font-semibold uppercase ${
+        styles[status] ?? "border-mute text-mute"
       }`}
     >
       {status}
@@ -26,15 +27,15 @@ export function StatusBadge({ status }: { status: string }) {
 
 export function UrgencyBadge({ urgency }: { urgency: number }) {
   const styles: Record<number, string> = {
-    1: "bg-slate-100 text-slate-600",
-    2: "bg-sky-100 text-sky-800",
-    3: "bg-amber-100 text-amber-800",
-    4: "bg-orange-100 text-orange-800",
-    5: "bg-rose-100 text-rose-800",
+    1: "border-mute text-mute",
+    2: "border-mute text-ink",
+    3: "border-ink text-ink",
+    4: "border-ink text-ink font-bold",
+    5: "border-ink bg-ink text-canvas",
   };
   return (
     <span
-      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${styles[urgency]}`}
+      className={`inline-block border px-2.5 py-0.5 text-xs font-semibold uppercase ${styles[urgency]}`}
     >
       {URGENCY_LABELS[urgency]} ({urgency}/5)
     </span>

@@ -35,63 +35,65 @@ const STEPS = [
 
 export default function Home() {
   return (
-    <div className="space-y-14 py-6">
-      <section className="text-center">
-        <p className="mb-3 inline-block rounded-full bg-blue-50 px-4 py-1 text-xs font-semibold text-blue-700">
+    <div>
+      {/* Off-white hero band */}
+      <section className="mx-auto max-w-6xl px-4 py-16 text-center">
+        <p className="mb-4 inline-block border border-ink px-4 py-1 font-display text-xs font-semibold tracking-wide">
           Smart India Hackathon 2026 · PS SIH26043 · Govt. of Jharkhand
         </p>
-        <h1 className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-          When disaster strikes, help should go where it&apos;s needed{" "}
-          <span className="text-blue-700">most</span> — not just nearest.
+        <h1 className="mx-auto max-w-3xl font-display text-5xl font-bold leading-none tracking-tight sm:text-6xl">
+          Help should go where it&apos;s needed most — not just nearest.
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
+        <p className="mx-auto mt-5 max-w-2xl text-lg text-mute">
           SahayataSetu crowdsources real problems during a disaster and
           intelligently matches relief supplies to the camps that need them most,
           using urgency, population affected and distance.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Link
             href="/problems"
-            className="rounded-lg bg-blue-700 px-5 py-2.5 font-semibold text-white hover:bg-blue-800"
+            className="bg-ink px-6 py-2.5 font-display font-semibold text-canvas hover:bg-ink/80"
           >
             View the Problem Board
           </Link>
           <Link
             href="/matches"
-            className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 font-semibold text-slate-700 hover:bg-slate-100"
+            className="border border-ink px-6 py-2.5 font-display font-semibold text-ink hover:bg-ink hover:text-canvas"
           >
             See Smart Matching
           </Link>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        {STEPS.map((s) => (
-          <div key={s.n} className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-700 font-bold text-white">
-              {s.n}
+      {/* Full-width black band: how it works */}
+      <section className="border-y border-ink bg-ink text-canvas">
+        <div className="mx-auto grid max-w-6xl gap-px sm:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <div key={s.n} className={`p-8 ${i > 0 ? "sm:border-l sm:border-canvas/30" : ""}`}>
+              <div className="font-display text-4xl font-bold text-canvas/40">{s.n}</div>
+              <h3 className="mt-1 font-display text-xl font-bold">{s.t}</h3>
+              <p className="mt-2 text-sm text-canvas/70">{s.d}</p>
             </div>
-            <h3 className="font-bold text-slate-900">{s.t}</h3>
-            <p className="mt-1 text-sm text-slate-600">{s.d}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </section>
 
-      <section>
-        <h2 className="mb-4 text-center text-2xl font-bold text-slate-900">
+      {/* Off-white band: roles */}
+      <section className="mx-auto max-w-6xl px-4 py-14">
+        <h2 className="mb-6 text-center font-display text-3xl font-bold">
           Who is it for?
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {ROLES.map((r) => (
             <div
               key={r.title}
-              className="flex flex-col rounded-xl border border-slate-200 bg-white p-5"
+              className="flex flex-col border border-ink bg-canvas p-5"
             >
-              <h3 className="font-bold text-slate-900">{r.title}</h3>
-              <p className="mt-1 flex-1 text-sm text-slate-600">{r.desc}</p>
+              <h3 className="font-display text-lg font-bold">{r.title}</h3>
+              <p className="mt-1 flex-1 text-sm text-mute">{r.desc}</p>
               <Link
                 href={r.href}
-                className="mt-3 text-sm font-semibold text-blue-700 hover:underline"
+                className="mt-3 text-sm font-semibold text-ink underline underline-offset-4 hover:text-mute"
               >
                 {r.cta} →
               </Link>
@@ -100,18 +102,23 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="rounded-2xl bg-slate-900 p-8 text-center text-white">
-        <h2 className="text-2xl font-bold">The difference: need-based matching</h2>
-        <p className="mx-auto mt-2 max-w-2xl text-slate-300">
-          A donor posts 1,000 water bottles. A plain app sends them to the nearest
-          camp. SahayataSetu scores <em>every</em> camp —{" "}
-          <span className="font-mono text-blue-300">
-            urgency × population ÷ distance
-          </span>{" "}
-          — and routes the bottles to a critical camp of 3,400 people even if a
-          calmer camp is closer. Every match shows its full score breakdown, so
-          officials can trust the recommendation.
-        </p>
+      {/* Full-width black band: the differentiator */}
+      <section className="border-t border-ink bg-ink py-14 text-center text-canvas">
+        <div className="mx-auto max-w-6xl px-4">
+          <h2 className="font-display text-3xl font-bold">
+            The difference: need-based matching
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-canvas/70">
+            A donor posts 1,000 water bottles. A plain app sends them to the
+            nearest camp. SahayataSetu scores <em>every</em> camp —{" "}
+            <span className="font-mono text-canvas">
+              urgency × population ÷ distance
+            </span>{" "}
+            — and routes the bottles to a critical camp of 3,400 people even if a
+            calmer camp is closer. Every match shows its full score breakdown, so
+            officials can trust the recommendation.
+          </p>
+        </div>
       </section>
     </div>
   );
