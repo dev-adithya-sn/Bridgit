@@ -10,6 +10,8 @@ export interface IntegrationStatus {
   failsafeApprove: boolean; // MODERATION_FAILSAFE=approve
   migration: boolean; // migration 001 applied
   moderation: boolean; // migration 002 applied
+  domainRouting: boolean; // migration 003 applied
+  representatives: boolean; // migration 004 applied
 }
 
 const NONE: IntegrationStatus = {
@@ -19,6 +21,8 @@ const NONE: IntegrationStatus = {
   failsafeApprove: false,
   migration: false,
   moderation: false,
+  domainRouting: false,
+  representatives: false,
 };
 
 /** Which optional integrations the server has configured (null while loading). */

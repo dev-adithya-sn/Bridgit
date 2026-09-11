@@ -1,4 +1,6 @@
-export type Role = "citizen" | "ngo" | "camp" | "university_team" | "admin";
+// Present once supabase/migrations/005 has been applied: "institution" and
+// "industry_partner" (the profiles.role check constraint rejects them before that).
+export type Role = "citizen" | "ngo" | "camp" | "university_team" | "admin" | "institution" | "industry_partner";
 
 export type ProblemStatus = "open" | "claimed" | "resolved";
 export type NeedStatus = "open" | "fulfilled";
@@ -46,6 +48,8 @@ export interface Problem {
   // Present once supabase/migrations/002 has been applied
   moderation_status?: ModerationStatus;
   moderation_reason?: string | null;
+  // Present once supabase/migrations/003 has been applied
+  domain?: ProblemDomain | null;
 }
 
 export type ModerationStatus = "pending" | "approved" | "rejected";
@@ -150,6 +154,10 @@ export const RESOURCE_TYPES = [
   { value: "sanitation", label: "Sanitation" },
 ] as const;
 
+/**
+ * @deprecated kept for the pre-migration category column; use PROBLEM_DOMAINS
+ * for anything new (domain routing to institutions/industry partners).
+ */
 export const PROBLEM_CATEGORIES = [
   // disaster response
   "Medical",
@@ -166,6 +174,97 @@ export const PROBLEM_CATEGORIES = [
   "Environment",
   "Other",
 ] as const;
+
+// ---------- Societal Innovation Collaboration Portal: domain routing ----------
+
+export const PROBLEM_DOMAINS = [
+  "Education",
+  "Healthcare",
+  "Agriculture",
+  "Water Resources",
+  "Sanitation",
+  "Environment",
+  "Energy",
+  "Urban Development",
+  "Accessibility",
+  "Public Administration",
+  "Rural Livelihoods",
+] as const;
+export type ProblemDomain = (typeof PROBLEM_DOMAINS)[number];
+
+export interface Institution {
+  id: string;
+  name: string;
+  district: string | null;
+  domains: ProblemDomain[]; // areas of academic/expertise strength
+  description: string | null; // free text: research focus, incubation cell, etc.
+  has_incubation_cell: boolean;
+  contact_name: string | null;
+  contact_email: string | null;
+  // Added alongside the Part 3 UI: the signup route needs it to find "my institution".
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface IndustryPartner {
+  id: string;
+  name: string;
+  sector: string; // e.g. "Agritech", "Healthtech MSME", "CSR"
+  domains: ProblemDomain[];
+  capabilities: string | null; // free text: funding / mentorship / prototyping / testing
+  contact_name: string | null;
+  contact_email: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * A profile's link to an institution — always created unverified (see
+ * supabase/migrations/004); only an admin can set verified = true.
+ */
+export interface InstitutionRepresentative {
+  id: string;
+  institution_id: string;
+  profile_id: string;
+  verified: boolean;
+  created_at: string;
+  institutions?: Institution; // joined
+  profiles?: Profile; // joined
+}
+
+export type RoutingStatus = "suggested" | "accepted" | "declined";
+
+export interface ProblemRouting {
+  id: string;
+  problem_id: string;
+  institution_id: string;
+  method: "llm" | "tag";
+  confidence: number; // 0–100
+  reasoning: string;
+  status: RoutingStatus;
+  created_at: string;
+  institutions?: Institution; // joined
+  problems?: Problem; // joined
+}
+
+/** Ranked institutions for a problem, as returned by /api/route-problem. */
+export interface RouteProblemResponse {
+  method: "llm" | "tag";
+  model?: string;
+  fallbackReason?: string;
+  matches: {
+    institutionId: string;
+    name: string;
+    domains: ProblemDomain[];
+    confidence: number;
+    reasoning: string;
+    // Absent from lib/routing.ts's in-memory ranking (nothing is saved yet);
+    // present once /api/route-problem has written the suggestion to
+    // problem_routing and this is the id a client passes to
+    // /api/route-problem/respond to accept or decline it.
+    routingId?: string;
+  }[];
+}
 
 export const JHARKHAND_DISTRICTS = [
   "Bokaro", "Chatra", "Deoghar", "Dhanbad", "Dumka", "East Singhbhum",

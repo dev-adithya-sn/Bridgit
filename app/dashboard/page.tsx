@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Camp, Match, Need, Problem, Resource } from "@/lib/types";
+import { useSession } from "@/lib/useSession";
+import { Camp, IndustryPartner, Institution, Match, Need, PROBLEM_DOMAINS, Problem, Resource } from "@/lib/types";
 import MapView, { MapMarker } from "@/components/MapView";
 
 function Stat({ label, value, muted }: { label: string; value: number; muted?: boolean }) {
@@ -17,11 +18,16 @@ function Stat({ label, value, muted }: { label: string; value: number; muted?: b
 }
 
 export default function DashboardPage() {
+  const { profile } = useSession();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [needs, setNeeds] = useState<(Need & { camps: Camp })[]>([]);
   const [camps, setCamps] = useState<Camp[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [industryPartners, setIndustryPartners] = useState<IndustryPartner[]>([]);
+  const [engagedInstitutionIds, setEngagedInstitutionIds] = useState<Set<string>>(new Set());
+  const [verifiedInstitutionIds, setVerifiedInstitutionIds] = useState<Set<string> | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -32,14 +38,45 @@ export default function DashboardPage() {
       sb.from("camps").select("*"),
       sb.from("matches").select("*"),
       sb.from("resources").select("*"),
-    ]).then(([p, n, c, m, r]) => {
+      // supabase/migrations/003 — absent before it's applied, handled below
+      sb.from("institutions").select("*"),
+      sb.from("industry_partners").select("*"),
+      sb.from("problem_routing").select("institution_id, status"),
+    ]).then(([p, n, c, m, r, inst, ind, routing]) => {
       setProblems((p.data as Problem[]) ?? []);
       setNeeds((n.data as (Need & { camps: Camp })[]) ?? []);
       setCamps((c.data as Camp[]) ?? []);
       setMatches((m.data as Match[]) ?? []);
       setResources((r.data as Resource[]) ?? []);
+      setInstitutions((inst.data as Institution[]) ?? []);
+      setIndustryPartners((ind.data as IndustryPartner[]) ?? []);
+      const engaged = new Set(
+        ((routing.data as { institution_id: string; status: string }[]) ?? [])
+          .filter((x) => x.status === "accepted")
+          .map((x) => x.institution_id)
+      );
+      setEngagedInstitutionIds(engaged);
     });
   }, []);
+
+  // Admin-only: institution_representatives is self-or-admin read (migration
+  // 004), so a true "verified institutions" count only exists for admins —
+  // everyone else sees the publicly-computable "engaged" count above instead.
+  useEffect(() => {
+    if (!isSupabaseConfigured || profile?.role !== "admin") return;
+    supabase()
+      .from("institution_representatives")
+      .select("institution_id")
+      .eq("verified", true)
+      .then(({ data }) => {
+        setVerifiedInstitutionIds(new Set(((data as { institution_id: string }[]) ?? []).map((x) => x.institution_id)));
+      });
+  }, [profile?.role]);
+
+  const domainCounts = PROBLEM_DOMAINS.map((d) => ({
+    domain: d,
+    count: problems.filter((p) => p.domain === d).length,
+  })).filter((d) => d.count > 0);
 
   const count = (arr: { status: string }[], s: string) =>
     arr.filter((x) => x.status === s).length;
@@ -107,6 +144,35 @@ export default function DashboardPage() {
             value={count(matches, "accepted") + count(matches, "delivered")}
           />
         </div>
+
+        {domainCounts.length > 0 && (
+          <div className="mt-6">
+            <h2 className="mb-2 font-display text-lg font-bold">Problems by domain</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+              {domainCounts.map((d) => (
+                <Stat key={d.domain} label={d.domain} value={d.count} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(institutions.length > 0 || industryPartners.length > 0) && (
+          <div className="mt-6">
+            <h2 className="mb-2 font-display text-lg font-bold">Institutional & industry participation</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat label="Institutions registered" value={institutions.length} />
+              {profile?.role === "admin" && verifiedInstitutionIds ? (
+                <Stat label="Verified institutions" value={verifiedInstitutionIds.size} />
+              ) : (
+                <Stat label="Institutions engaged" value={engagedInstitutionIds.size} muted />
+              )}
+              {/* No engagement metric here: nothing in this build links industry
+                  partners to problem_routing, so a total is the honest number
+                  we can show — see the Part 3 summary for why. */}
+              <Stat label="Industry partners" value={industryPartners.length} />
+            </div>
+          </div>
+        )}
 
         <div className="mt-6">
           <div className="mb-2 flex flex-wrap gap-4 text-xs uppercase text-mute">

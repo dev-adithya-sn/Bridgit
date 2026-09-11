@@ -8,7 +8,7 @@ import {
   supabaseAsUser,
   supabaseService,
 } from "@/lib/supabaseServer";
-import { JHARKHAND_DISTRICTS, PROBLEM_CATEGORIES, PostOutcome } from "@/lib/types";
+import { JHARKHAND_DISTRICTS, PROBLEM_CATEGORIES, PROBLEM_DOMAINS, PostOutcome } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -44,6 +44,11 @@ export async function POST(request: Request) {
   const population = num(body.population_affected);
   const lat = num(body.lat);
   const lng = num(body.lng);
+  // Additive alongside category (supabase/migrations/003): optional, and
+  // only sent by the client once that migration is applied — see the
+  // integrations?.domainRouting check in app/problems/new/page.tsx.
+  const domain =
+    typeof body.domain === "string" && (PROBLEM_DOMAINS as readonly string[]).includes(body.domain) ? body.domain : null;
 
   const problems: string[] = [];
   if (title.length < 3) problems.push("a title");
@@ -82,6 +87,7 @@ export async function POST(request: Request) {
       poster_name: profile?.full_name || authUser?.user?.email || "Anonymous",
       moderation_status: moderation.verdict === "approved" ? "approved" : "pending",
       moderation_reason: moderation.verdict === "flagged" ? moderation.reasoning : null,
+      ...(domain ? { domain } : {}),
     })
     .select("id")
     .single();

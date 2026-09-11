@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useSession } from "@/lib/useSession";
-import { Problem } from "@/lib/types";
-import { ModerationBadge, StatusBadge, UrgencyBadge } from "@/components/Badges";
+import { Problem, ProblemRouting } from "@/lib/types";
+import { DomainBadge, ModerationBadge, StatusBadge, UrgencyBadge } from "@/components/Badges";
 import AnswersThread from "@/components/AnswersThread";
 import MapView from "@/components/MapView";
 
@@ -14,14 +14,20 @@ export default function ProblemDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { session, profile } = useSession();
   const [problem, setProblem] = useState<Problem | null>(null);
+  const [routing, setRouting] = useState<ProblemRouting[]>([]);
   const [loading, setLoading] = useState(true);
   const [solution, setSolution] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const { data } = await supabase().from("problems").select("*").eq("id", id).single();
+    const sb = supabase();
+    const [{ data }, { data: routingRows }] = await Promise.all([
+      sb.from("problems").select("*").eq("id", id).single(),
+      sb.from("problem_routing").select("*, institutions(*)").eq("problem_id", id).order("confidence", { ascending: false }),
+    ]);
     setProblem(data as Problem | null);
+    setRouting((routingRows as ProblemRouting[]) ?? []);
     setLoading(false);
   }, [id]);
 
@@ -78,6 +84,7 @@ export default function ProblemDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={problem.status} />
             <UrgencyBadge urgency={problem.urgency} />
+            <DomainBadge domain={problem.domain} />
             <ModerationBadge status={problem.moderation_status} />
           </div>
           {problem.moderation_status && problem.moderation_status !== "approved" && (
@@ -193,6 +200,34 @@ export default function ProblemDetailPage() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Domain routing summary — the full generate/accept/decline UI lives at /routing */}
+        <div className="mt-6 border border-ink bg-canvas p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-lg font-bold">Institution routing</h2>
+            <Link
+              href={`/routing?problem=${problem.id}`}
+              className="text-sm font-semibold text-ink underline underline-offset-2"
+            >
+              {routing.length > 0 ? "Manage routing →" : "Generate routing suggestions →"}
+            </Link>
+          </div>
+          {routing.length === 0 ? (
+            <p className="mt-2 text-sm text-mute">No institutions have been suggested for this problem yet.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {routing.map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border border-ink p-3 text-sm">
+                  <span className="font-semibold">{r.institutions?.name ?? "Unknown institution"}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-xs uppercase text-mute">{Math.round(r.confidence)}% confidence</span>
+                    <StatusBadge status={r.status} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <AnswersThread problemId={problem.id} />

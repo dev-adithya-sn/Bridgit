@@ -39,6 +39,16 @@ export function ModerationBadge({ status }: { status?: string }) {
   );
 }
 
+/** Shown once a problem has a classified domain (supabase/migrations/003). */
+export function DomainBadge({ domain }: { domain?: string | null }) {
+  if (!domain) return null;
+  return (
+    <span className="inline-block border border-dashed border-ink px-2.5 py-0.5 text-xs font-semibold uppercase text-ink">
+      {domain}
+    </span>
+  );
+}
+
 export function UrgencyBadge({ urgency }: { urgency: number }) {
   const styles: Record<number, string> = {
     1: "border-mute text-mute",

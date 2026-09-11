@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { postWithSession } from "@/lib/authFetch";
 import { useSession } from "@/lib/useSession";
 import { useIntegrationStatus } from "@/lib/useIntegrationStatus";
-import { PROBLEM_CATEGORIES, JHARKHAND_DISTRICTS, URGENCY_LABELS, PostOutcome } from "@/lib/types";
+import { PROBLEM_CATEGORIES, PROBLEM_DOMAINS, JHARKHAND_DISTRICTS, URGENCY_LABELS, PostOutcome } from "@/lib/types";
 import LocationPicker from "@/components/LocationPicker";
 import IntegrationNotice from "@/components/IntegrationNotice";
 import Link from "next/link";
@@ -18,6 +18,10 @@ export default function NewProblemPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>(PROBLEM_CATEGORIES[0]);
+  const [domain, setDomain] = useState<string>("");
+  const [domainReasoning, setDomainReasoning] = useState<string>("");
+  const [domainMethod, setDomainMethod] = useState<string>("");
+  const [classifying, setClassifying] = useState(false);
   const [district, setDistrict] = useState<string>("Ranchi");
   const [ward, setWard] = useState("");
   const [urgency, setUrgency] = useState(3);
@@ -39,6 +43,24 @@ export default function NewProblemPage() {
     );
   }
 
+  async function suggestDomain() {
+    setClassifying(true);
+    setError("");
+    const { status: httpStatus, json } = await postWithSession("/api/classify-domain", { title, description });
+    setClassifying(false);
+    if (httpStatus !== 200) {
+      setError(json?.error ?? "Could not suggest a domain — pick one manually below.");
+      return;
+    }
+    if (json.domain) {
+      setDomain(json.domain);
+      setDomainReasoning(json.reasoning ?? "");
+      setDomainMethod(json.method ?? "");
+    } else {
+      setDomainReasoning(json.reasoning ?? "Couldn't tell — pick one manually.");
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -54,6 +76,8 @@ export default function NewProblemPage() {
       lng,
       urgency,
       population_affected: population,
+      // the domain column only exists once migration 003 is applied
+      ...(integrations?.domainRouting && domain ? { domain } : {}),
     });
     setBusy(false);
     if (json?.verdict) {
@@ -117,6 +141,7 @@ export default function NewProblemPage() {
 
       <div className="mx-auto max-w-2xl px-4 py-8">
         <IntegrationNotice status={integrations} scope="posting" />
+        <IntegrationNotice status={integrations} scope="routing" />
         {outcome?.verdict === "rejected" && (
           <div className="mb-4 border-2 border-ink bg-canvas p-4 text-sm">
             <p className="font-display font-bold">Not posted — this looked like spam</p>
@@ -164,6 +189,38 @@ export default function NewProblemPage() {
               <span className="mb-1 block font-medium">Ward / area (optional)</span>
               <input value={ward} onChange={(e) => setWard(e.target.value)} className={input} />
             </label>
+            {integrations?.domainRouting && (
+              <label className="block text-sm sm:col-span-2">
+                <span className="mb-1 flex flex-wrap items-center justify-between gap-2 font-medium">
+                  <span>
+                    Domain{" "}
+                    <span className="font-normal text-mute">
+                      — which university teams/institutions this could be routed to
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={suggestDomain}
+                    disabled={classifying || (title.length < 3 && description.length < 10)}
+                    className="border border-ink px-2.5 py-1 text-xs font-semibold uppercase tracking-wide hover:bg-ink hover:text-canvas disabled:opacity-40"
+                  >
+                    {classifying ? "Suggesting…" : "Suggest domain"}
+                  </button>
+                </span>
+                <select value={domain} onChange={(e) => setDomain(e.target.value)} className={input}>
+                  <option value="">— choose a domain —</option>
+                  {PROBLEM_DOMAINS.map((d) => (
+                    <option key={d}>{d}</option>
+                  ))}
+                </select>
+                {domainReasoning && (
+                  <span className="mt-1 block text-xs text-mute">
+                    {domainMethod === "llm" ? "AI suggestion" : domainMethod === "keyword" ? "Keyword-matched suggestion" : "Note"}: {domainReasoning}{" "}
+                    {domain && "— you can change it above."}
+                  </span>
+                )}
+              </label>
+            )}
             <label className="block text-sm">
               <span className="mb-1 block font-medium">People affected (approx.)</span>
               <input

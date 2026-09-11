@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/problems", label: "Problem Board" },
   { href: "/resources", label: "Resources & Needs" },
   { href: "/matches", label: "Smart Matching" },
+  { href: "/routing", label: "Routing" },
   { href: "/dashboard", label: "Dashboard" },
 ];
 
@@ -17,6 +18,8 @@ const ROLE_LABELS: Record<string, string> = {
   ngo: "NGO",
   camp: "Relief Camp",
   university_team: "University Team",
+  institution: "Institution",
+  industry_partner: "Industry Partner",
   admin: "Admin",
 };
 
@@ -42,7 +45,15 @@ export default function Nav() {
           </span>
         </Link>
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
-          {[...LINKS, ...(profile?.role === "admin" ? [{ href: "/admin/moderation", label: "Moderation" }] : [])].map((l) => (
+          {[
+            ...LINKS,
+            ...(profile?.role === "admin"
+              ? [
+                  { href: "/admin/moderation", label: "Moderation" },
+                  { href: "/admin/institutions", label: "Institutions" },
+                ]
+              : []),
+          ].map((l) => (
             <Link
               key={l.href}
               href={l.href}

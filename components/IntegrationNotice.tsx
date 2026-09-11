@@ -8,13 +8,14 @@ const code = "bg-ink px-1 text-canvas";
  * Setup banner in the same style as SetupNotice.
  * scope "matching": AI donor matching + WhatsApp (resources, profile pages).
  * scope "posting": moderated posting of problems and answers.
+ * scope "routing": domain routing to institutions (problems/new, routing, admin/institutions).
  */
 export default function IntegrationNotice({
   status,
   scope = "matching",
 }: {
   status: IntegrationStatus | null;
-  scope?: "matching" | "posting";
+  scope?: "matching" | "posting" | "routing";
 }) {
   if (!status) return null;
 
@@ -59,6 +60,36 @@ export default function IntegrationNotice({
         <>
           No <code className={code}>GEMINI_API_KEY</code> — automatic moderation is off, so new posts are{" "}
           {status.failsafeApprove ? "published without review (MODERATION_FAILSAFE=approve)" : "held for a moderator to review"}.
+        </>
+      );
+  }
+  if (scope === "routing") {
+    if (!status.domainRouting)
+      items.push(
+        <>
+          Database migration not applied — run <code className={code}>supabase/migrations/003_domain_routing.sql</code>{" "}
+          in the Supabase SQL Editor. Domain routing to institutions is unavailable until then.
+        </>
+      );
+    if (status.domainRouting && !status.representatives)
+      items.push(
+        <>
+          Database migration not applied — run <code className={code}>supabase/migrations/004_institution_representatives.sql</code>{" "}
+          in the Supabase SQL Editor. Institutions can be registered, but no one can be verified to accept suggestions on their behalf yet.
+        </>
+      );
+    if (!status.serviceKey)
+      items.push(
+        <>
+          No <code className={code}>SUPABASE_SERVICE_ROLE_KEY</code> on the server — registering institutions/industry
+          partners and generating routing suggestions can&apos;t be saved.
+        </>
+      );
+    if (!status.llm)
+      items.push(
+        <>
+          No <code className={code}>GEMINI_API_KEY</code> — domain suggestions and institution routing use the
+          deterministic keyword/tag fallback instead of AI.
         </>
       );
   }
