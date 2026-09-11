@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { postWithSession } from "@/lib/authFetch";
 import { useSession } from "@/lib/useSession";
-import { PROBLEM_CATEGORIES, JHARKHAND_DISTRICTS, URGENCY_LABELS } from "@/lib/types";
+import { useIntegrationStatus } from "@/lib/useIntegrationStatus";
+import { PROBLEM_CATEGORIES, JHARKHAND_DISTRICTS, URGENCY_LABELS, PostOutcome } from "@/lib/types";
 import LocationPicker from "@/components/LocationPicker";
+import IntegrationNotice from "@/components/IntegrationNotice";
 import Link from "next/link";
 
 export default function NewProblemPage() {
   const router = useRouter();
-  const { session, profile, loading } = useSession();
+  const { session, loading } = useSession();
+  const integrations = useIntegrationStatus();
+  const [outcome, setOutcome] = useState<PostOutcome | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>(PROBLEM_CATEGORIES[0]);
@@ -39,7 +43,8 @@ export default function NewProblemPage() {
     e.preventDefault();
     setBusy(true);
     setError("");
-    const { error } = await supabase().from("problems").insert({
+    setOutcome(null);
+    const { status, json } = await postWithSession("/api/problems", {
       title,
       description,
       category,
@@ -49,18 +54,53 @@ export default function NewProblemPage() {
       lng,
       urgency,
       population_affected: population,
-      posted_by: session!.user.id,
-      poster_name: profile?.full_name || session!.user.email,
     });
     setBusy(false);
-    if (error) {
-      setError(error.message);
+    if (json?.verdict) {
+      const result = json as PostOutcome;
+      if (result.verdict === "approved") {
+        router.push("/problems");
+        return;
+      }
+      // rejected: keep the form filled in so it can be edited and resubmitted
+      setOutcome(result);
       return;
     }
-    router.push("/problems");
+    setError(json?.error ?? `Could not post the problem (HTTP ${status}).`);
   }
 
   const input = "w-full border border-ink bg-white px-3 py-2 outline-none";
+
+  if (outcome?.verdict === "flagged") {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-12">
+        <div className="border border-ink bg-canvas p-6">
+          <h1 className="font-display text-2xl font-bold">Submitted — under review</h1>
+          <p className="mt-2 text-sm">
+            Your problem was saved, but our automatic check held it for a moderator before it appears on the public
+            board. You can still see it on the board yourself, marked &ldquo;Under review&rdquo;.
+          </p>
+          <p className="mt-3 border-l border-ink pl-3 text-sm italic text-mute">&ldquo;{outcome.reasoning}&rdquo;</p>
+          <div className="mt-5 flex gap-2">
+            <Link
+              href="/problems"
+              className="bg-ink px-4 py-2 font-display font-semibold uppercase tracking-wide text-canvas hover:bg-ink/80"
+            >
+              Go to the board
+            </Link>
+            {outcome.id && (
+              <Link
+                href={`/problems/${outcome.id}`}
+                className="border border-ink px-4 py-2 font-display font-semibold uppercase tracking-wide hover:bg-ink hover:text-canvas"
+              >
+                View your post
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -76,6 +116,17 @@ export default function NewProblemPage() {
       </div>
 
       <div className="mx-auto max-w-2xl px-4 py-8">
+        <IntegrationNotice status={integrations} scope="posting" />
+        {outcome?.verdict === "rejected" && (
+          <div className="mb-4 border-2 border-ink bg-canvas p-4 text-sm">
+            <p className="font-display font-bold">Not posted — this looked like spam</p>
+            <p className="mt-1">
+              Our automatic check didn&apos;t find a genuine community issue in this post. If it is one, add more
+              detail about what&apos;s wrong, where, and who is affected, then submit again.
+            </p>
+            <p className="mt-2 border-l border-ink pl-3 italic text-mute">&ldquo;{outcome.reasoning}&rdquo;</p>
+          </div>
+        )}
         <form onSubmit={onSubmit} className="space-y-4 border border-ink bg-canvas p-6">
           <input
             required
@@ -146,7 +197,7 @@ export default function NewProblemPage() {
             disabled={busy}
             className="w-full bg-ink py-2.5 font-display font-semibold uppercase tracking-wide text-canvas hover:bg-ink/80 disabled:opacity-50"
           >
-            {busy ? "Posting…" : "Post problem"}
+            {busy ? "Checking & posting…" : outcome?.verdict === "rejected" ? "Resubmit" : "Post problem"}
           </button>
         </form>
       </div>

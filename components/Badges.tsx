@@ -25,6 +25,20 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
+/** Shown only on posts that aren't public yet (their author and admins see them). */
+export function ModerationBadge({ status }: { status?: string }) {
+  if (!status || status === "approved") return null;
+  return (
+    <span
+      className={`inline-block border px-2.5 py-0.5 text-xs font-semibold uppercase ${
+        status === "rejected" ? "border-ink bg-ink text-canvas" : "border-dashed border-ink text-ink"
+      }`}
+    >
+      {status === "rejected" ? "Rejected by moderator" : "Under review"}
+    </span>
+  );
+}
+
 export function UrgencyBadge({ urgency }: { urgency: number }) {
   const styles: Record<number, string> = {
     1: "border-mute text-mute",

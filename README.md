@@ -3,9 +3,12 @@
 **Smart India Hackathon 2026 · PS #43 (SIH26043) · Govt. of Jharkhand**
 
 A crowdsourcing platform where citizens, NGOs and government post real problems
-during a disaster, and university teams claim and solve them — **plus** a smart
-matching engine that routes relief supplies to the camps that need them **most**
-(by urgency, population affected and distance), not just the nearest one.
+— during a disaster or in everyday civic life (education, public health, safety,
+civic infrastructure, environment) — and university teams claim and solve them,
+with an open community answer thread on every problem and AI moderation before
+anything goes public. **Plus** a smart matching engine that routes relief
+supplies to the camps that need them **most** (by urgency, population affected
+and distance), not just the nearest one.
 
 ## The differentiator
 
@@ -123,6 +126,55 @@ need in plain words (e.g. "elderly residents out of BP medicines, road flooded")
 can rank the boat team for access, which keyword matching would miss — then tick
 donors and **Notify selected via WhatsApp**.
 
+## One-time setup: community Q&A + AI moderation
+
+Every new problem and every community answer is checked by Gemini before it
+goes public:
+
+| Verdict | What it means | What happens |
+|---|---|---|
+| **approved** | Genuine civic, community or disaster report, question or answer — *including* complaints that name a government department, scheme or official | Published immediately |
+| **rejected** | Spam, gibberish, advertising, obvious trolling | Not saved; the poster sees why and can edit and resubmit |
+| **flagged** | Hate speech, insults or defamation of a named person, calls to violence, party-political campaigning | Saved but hidden; the poster sees "under review"; an admin decides |
+
+Moderation is **enforced on the server**: posts go through `/api/problems` and
+`/api/answers`, which moderate first and then save using the Supabase
+service-role key. The database blocks direct inserts from browsers and stops
+non-admins from changing a post's moderation status, and editing a post's text
+sends it back to review.
+
+1. **Run the migration:** in Supabase → SQL Editor, run
+   `supabase/migrations/002_community_qa_moderation.sql` (after migration 001).
+   Existing problems are marked approved, so the demo board stays as it was.
+2. **Add the service-role key:** Supabase → **Settings → API** → copy the
+   `service_role` key into `.env.local` (and Vercel):
+   ```
+   SUPABASE_SERVICE_ROLE_KEY=...
+   ```
+   ⚠️ This key bypasses all row-level security. It is read only by server routes —
+   never prefix it with `NEXT_PUBLIC_` or paste it into client code.
+3. **Gemini key:** the same `GEMINI_API_KEY` as donor matching (step 2 above).
+4. **Become an admin** to use the moderation queue: sign up choosing
+   "Government / Admin", then open **Moderation** in the nav (`/admin/moderation`).
+   Each held post shows the AI's reasoning, with Approve / Reject buttons.
+5. **Test:** `npx tsx scripts/verify-moderation.ts` runs three sample posts
+   (a department complaint, spam, a political attack) and — with the migration,
+   service key and `npm run dev` running — checks visibility and the admin queue.
+   `npx tsx scripts/test-moderation.ts` runs offline checks.
+
+**Fail-safe — say this to judges:** if the AI can't give a verdict (no key,
+outage, timeout, or malformed reply), the post is **flagged and held for a
+human**, never silently published and never silently blocked. The trade-off:
+during an AI outage, new posts wait in the moderation queue. For a live demo
+that must never stall, set `MODERATION_FAILSAFE=approve` — posts then publish
+without review while the AI is unavailable, which is a known limitation to
+disclose.
+
+**Known limitation:** anyone can sign up as "Government / Admin" for demo
+convenience, so the queue isn't protected against a determined user. For a real
+deployment, remove that signup option and promote admins in SQL:
+`update profiles set role = 'admin' where id = '<user id>';`
+
 ## Demo script (for judging)
 
 1. **Problem flow:** Sign up as a *Citizen* → post "Ward 4 needs a medical camp"
@@ -136,6 +188,13 @@ donors and **Notify selected via WhatsApp**.
    statuses update live.
 3. **Dashboard:** the map shows every camp and problem; the stat tiles update
    as things resolve.
+4. **Moderation:** post a civic complaint that names a department ("the PWD has
+   ignored the broken drain for four months") → published instantly. Post spam
+   → refused with the reason. Post a personal attack on a named councillor →
+   "under review"; log in as an admin → **Moderation** → read the AI's reasoning
+   → Approve or Reject.
+5. **Community answers:** on any problem, anyone signed in can add an answer
+   (also moderated), alongside the university teams' claim-and-solve flow.
 
 ## Tech
 
@@ -146,13 +205,16 @@ donors and **Notify selected via WhatsApp**.
 - AI donor matching: `lib/capabilityMatching.ts` (Google Gemini free tier with
   JSON-schema output, validated; falls back to the tag-based scorer on any failure)
 - WhatsApp outreach: Twilio sandbox via `app/api/notify`, logged to `outreach`
+- AI moderation: `lib/moderation.ts` (Gemini, three verdicts, fail-safe to
+  human review), enforced by server routes + Postgres RLS and triggers
 
 ## Deploy to Vercel (free)
 
 1. Push this repo to GitHub.
 2. [vercel.com](https://vercel.com) → New Project → import the repo.
 3. Add the two `NEXT_PUBLIC_SUPABASE_*` environment variables, plus
-   `GEMINI_API_KEY` and the three `TWILIO_*` values if you use AI matching and WhatsApp.
+   `SUPABASE_SERVICE_ROLE_KEY` (required for posting), `GEMINI_API_KEY`, and the
+   three `TWILIO_*` values if you use WhatsApp.
 4. Deploy — you get a public URL to show judges.
 
 ## Scalability story (for Q&A)

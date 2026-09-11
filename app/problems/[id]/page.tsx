@@ -6,7 +6,8 @@ import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useSession } from "@/lib/useSession";
 import { Problem } from "@/lib/types";
-import { StatusBadge, UrgencyBadge } from "@/components/Badges";
+import { ModerationBadge, StatusBadge, UrgencyBadge } from "@/components/Badges";
+import AnswersThread from "@/components/AnswersThread";
 import MapView from "@/components/MapView";
 
 export default function ProblemDetailPage() {
@@ -77,7 +78,16 @@ export default function ProblemDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={problem.status} />
             <UrgencyBadge urgency={problem.urgency} />
+            <ModerationBadge status={problem.moderation_status} />
           </div>
+          {problem.moderation_status && problem.moderation_status !== "approved" && (
+            <p className="mt-2 border-l border-ink pl-3 text-sm text-mute">
+              {problem.moderation_status === "pending"
+                ? "Only you and moderators can see this until it's approved."
+                : "A moderator rejected this post, so it isn't public."}
+              {problem.moderation_reason ? ` Reason: ${problem.moderation_reason}` : ""}
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm uppercase text-mute">
             <span>{problem.district}{problem.ward ? ` · ${problem.ward}` : ""}</span>
             <span>{problem.category}</span>
@@ -184,6 +194,8 @@ export default function ProblemDetailPage() {
             )}
           </div>
         </div>
+
+        <AnswersThread problemId={problem.id} />
       </div>
     </div>
   );

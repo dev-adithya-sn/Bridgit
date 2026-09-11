@@ -43,6 +43,30 @@ export interface Problem {
   claimed_by_name: string | null;
   solution: string | null;
   created_at: string;
+  // Present once supabase/migrations/002 has been applied
+  moderation_status?: ModerationStatus;
+  moderation_reason?: string | null;
+}
+
+export type ModerationStatus = "pending" | "approved" | "rejected";
+export type ModerationVerdict = "approved" | "rejected" | "flagged";
+
+export interface Answer {
+  id: string;
+  problem_id: string;
+  author_profile_id: string;
+  body: string;
+  moderation_status: ModerationStatus;
+  moderation_reason: string | null;
+  created_at: string;
+  profiles?: { full_name: string; org_name: string | null; role: Role } | null; // joined
+}
+
+/** What a posting route tells the browser after moderation. */
+export interface PostOutcome {
+  verdict: ModerationVerdict;
+  reasoning: string;
+  id?: string; // row id when the post was saved (approved or flagged)
 }
 
 export interface Resource {
@@ -127,12 +151,19 @@ export const RESOURCE_TYPES = [
 ] as const;
 
 export const PROBLEM_CATEGORIES = [
+  // disaster response
   "Medical",
   "Food & Water",
   "Shelter",
   "Infrastructure",
   "Rescue",
   "Sanitation",
+  // everyday community issues
+  "Education",
+  "Public Health",
+  "Civic Infrastructure",
+  "Safety",
+  "Environment",
   "Other",
 ] as const;
 

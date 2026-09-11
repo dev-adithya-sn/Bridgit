@@ -43,29 +43,46 @@ async function signUp(email: string, role: string, name: string) {
     throw new Error(
       `signup ${role}: no session returned — "Confirm email" is still ON in Supabase Auth settings`
     );
-  return { sb, userId: data.user!.id };
+  return { sb, userId: data.user!.id, token: data.session.access_token };
 }
 
 async function main() {
   // ---- (a) Citizen posts a problem with a location pin ----
   const citizen = await signUp(emails.citizen, "citizen", "Demo Citizen");
-  const { data: problem, error: pErr } = await citizen.sb
-    .from("problems")
-    .insert({
-      title: `Ward 4 needs a medical camp [verify-${run}]`,
-      description: "600 people in the shelter have no doctor access after the flood.",
-      category: "Medical",
-      district: "Sahibganj",
-      ward: "Ward 4",
-      lat: 25.25, lng: 87.64,
-      urgency: 5,
-      population_affected: 600,
-      posted_by: citizen.userId,
-      poster_name: "Demo Citizen",
-    })
-    .select()
-    .single();
-  check("(a) citizen posts problem with pin", !pErr && !!problem, pErr?.message);
+  const newProblem = {
+    title: `Ward 4 needs a medical camp [verify-${run}]`,
+    description: "600 people in the shelter have no doctor access after the flood.",
+    category: "Medical",
+    district: "Sahibganj",
+    ward: "Ward 4",
+    lat: 25.25, lng: 87.64,
+    urgency: 5,
+    population_affected: 600,
+  };
+  // After migration 002, problems can only be created through the moderated
+  // /api/problems route (needs `npm run dev`); before it, insert directly.
+  const moderationOn = !(await citizen.sb.from("problems").select("moderation_status").limit(1)).error;
+  let problem: { id: string } | null = null;
+  let pErr: string | undefined;
+  if (moderationOn) {
+    const res = await fetch(`${process.env.APP_URL ?? "http://localhost:3000"}/api/problems`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${citizen.token}` },
+      body: JSON.stringify(newProblem),
+    });
+    const body = await res.json();
+    if (body.verdict === "approved" && body.id) problem = { id: body.id };
+    else pErr = `moderation verdict ${body.verdict ?? "none"} (HTTP ${res.status}): ${body.reasoning ?? body.error}`;
+  } else {
+    const { data, error } = await citizen.sb
+      .from("problems")
+      .insert({ ...newProblem, posted_by: citizen.userId, poster_name: "Demo Citizen" })
+      .select()
+      .single();
+    problem = data;
+    pErr = error?.message;
+  }
+  check("(a) citizen posts problem with pin", !pErr && !!problem, pErr);
 
   // ---- (b) University team claims → solution → resolved ----
   const team = await signUp(emails.team, "university_team", "Demo University Team");

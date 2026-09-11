@@ -42,7 +42,7 @@ export default function Nav() {
           </span>
         </Link>
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
-          {LINKS.map((l) => (
+          {[...LINKS, ...(profile?.role === "admin" ? [{ href: "/admin/moderation", label: "Moderation" }] : [])].map((l) => (
             <Link
               key={l.href}
               href={l.href}

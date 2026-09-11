@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Problem, PROBLEM_CATEGORIES, JHARKHAND_DISTRICTS } from "@/lib/types";
-import { StatusBadge, UrgencyBadge } from "@/components/Badges";
+import { ModerationBadge, StatusBadge, UrgencyBadge } from "@/components/Badges";
 import MapView, { MapMarker } from "@/components/MapView";
 
 // monochrome marker scheme: open = ink, claimed = warm grey, resolved = pale
@@ -148,6 +148,7 @@ export default function ProblemsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-display font-semibold">{p.title}</h3>
                   <StatusBadge status={p.status} />
+                  <ModerationBadge status={p.moderation_status} />
                   <UrgencyBadge urgency={p.urgency} />
                 </div>
                 <p className="mt-1 line-clamp-2 text-sm text-mute">{p.description}</p>
