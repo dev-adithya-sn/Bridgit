@@ -11,6 +11,9 @@ import {
 import { suggestMatches } from "@/lib/matching";
 import { StatusBadge, UrgencyBadge } from "@/components/Badges";
 import LocationPicker from "@/components/LocationPicker";
+import DonorMatchPanel from "@/components/DonorMatchPanel";
+import IntegrationNotice from "@/components/IntegrationNotice";
+import { useIntegrationStatus } from "@/lib/useIntegrationStatus";
 
 const input = "w-full border border-ink bg-white px-3 py-2 outline-none";
 
@@ -42,6 +45,11 @@ export default function ResourcesPage() {
   const [nQty, setNQty] = useState(500);
   const [nUnit, setNUnit] = useState("bottles (1L)");
   const [nUrgency, setNUrgency] = useState(3);
+  const [nDescription, setNDescription] = useState("");
+
+  // AI donor matching for the most recently posted need
+  const integrations = useIntegrationStatus();
+  const [postedNeed, setPostedNeed] = useState<{ id: string; label: string } | null>(null);
 
   const load = useCallback(async () => {
     const sb = supabase();
@@ -122,19 +130,31 @@ export default function ResourcesPage() {
     }
     setBusy(true);
     setError("");
-    const { error } = await supabase().from("needs").insert({
-      camp_id: nCamp,
-      type: nType,
-      quantity_needed: nQty,
-      unit: nUnit,
-      urgency: nUrgency,
-      posted_by: session!.user.id,
-    });
+    const aiReady = !!integrations?.migration;
+    const { data: inserted, error } = await supabase()
+      .from("needs")
+      .insert({
+        camp_id: nCamp,
+        type: nType,
+        quantity_needed: nQty,
+        unit: nUnit,
+        urgency: nUrgency,
+        posted_by: session!.user.id,
+        // the description column only exists once migration 001 is applied
+        ...(aiReady && nDescription.trim() ? { description: nDescription.trim() } : {}),
+      })
+      .select()
+      .single();
     setBusy(false);
-    if (error) {
-      setError(error.message);
+    if (error || !inserted) {
+      setError(error?.message ?? "Could not post need.");
       return;
     }
+    if (aiReady) {
+      const campName = camps.find((c) => c.id === nCamp)?.name ?? "camp";
+      setPostedNeed({ id: inserted.id, label: `${nQty} ${nUnit} of ${typeLabel(nType).toLowerCase()} · ${campName}` });
+    }
+    setNDescription("");
     setForm("none");
     load();
   }
@@ -192,7 +212,18 @@ export default function ResourcesPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-6">
+      {session && <IntegrationNotice status={integrations} />}
       {error && <p className="mb-3 bg-ink px-3 py-2 text-sm font-medium text-canvas">{error}</p>}
+
+      {postedNeed && (
+        <DonorMatchPanel
+          key={postedNeed.id}
+          needId={postedNeed.id}
+          needLabel={postedNeed.label}
+          twilioReady={!!integrations?.twilio}
+          onClose={() => setPostedNeed(null)}
+        />
+      )}
 
       {form === "resource" && session && (
         <form onSubmit={postResource} className="mb-6 border border-ink bg-canvas p-5">
@@ -272,6 +303,25 @@ export default function ResourcesPage() {
               </span>
               <input type="range" min={1} max={5} value={nUrgency}
                 onChange={(e) => setNUrgency(Number(e.target.value))} className="w-full accent-ink" />
+            </label>
+            <label className="block text-sm sm:col-span-2">
+              <span className="mb-1 block font-medium">
+                Describe the need{" "}
+                <span className="font-normal text-mute">
+                  {integrations?.migration
+                    ? "— the AI matcher reads this to find donors who can help"
+                    : "— available once the AI-matching migration is applied"}
+                </span>
+              </span>
+              <textarea
+                rows={3}
+                maxLength={1000}
+                disabled={!integrations?.migration}
+                value={nDescription}
+                onChange={(e) => setNDescription(e.target.value)}
+                placeholder="e.g. 40 elderly residents with diabetes and hypertension have run out of their regular medicines; roads to the camp are partly flooded."
+                className={`${input} disabled:opacity-50`}
+              />
             </label>
           </div>
           <button disabled={busy}

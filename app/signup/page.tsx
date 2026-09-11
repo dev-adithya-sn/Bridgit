@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { normalizePhone } from "@/lib/phone";
+import { MAX_CAPABILITY_CHARS } from "@/lib/capabilityLimits";
 
 const ROLES = [
   { value: "citizen", label: "Citizen / Volunteer", desc: "Report problems on the ground" },
@@ -20,17 +22,35 @@ export default function SignupPage() {
   const [role, setRole] = useState("citizen");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [capability, setCapability] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const isDonor = role === "ngo" || role === "camp";
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const normalizedPhone = isDonor && phone.trim() ? normalizePhone(phone) : null;
+    if (isDonor && phone.trim() && !normalizedPhone) {
+      setError("Enter the WhatsApp number with country code, e.g. +91 98765 43210.");
+      return;
+    }
     setBusy(true);
     setError("");
     const { error } = await supabase().auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, role, org_name: orgName || null } },
+      options: {
+        data: {
+          full_name: fullName,
+          role,
+          org_name: orgName || null,
+          ...(isDonor
+            ? { capability_description: capability.trim() || null, phone_number: normalizedPhone }
+            : {}),
+        },
+      },
     });
     setBusy(false);
     if (error) {
@@ -92,6 +112,39 @@ export default function SignupPage() {
             onChange={(e) => setOrgName(e.target.value)}
             className={input}
           />
+        )}
+        {isDonor && (
+          <div className="space-y-4 border border-ink p-4">
+            <label className="block text-sm">
+              <span className="mb-1 block font-display font-semibold">What can you offer?</span>
+              <textarea
+                rows={4}
+                maxLength={MAX_CAPABILITY_CHARS}
+                value={capability}
+                onChange={(e) => setCapability(e.target.value)}
+                placeholder="e.g. 'We run a pharmacy, can supply basic meds, bandages, and have a van for transport'"
+                className={input}
+              />
+              <span className="mt-1 block text-xs text-mute">
+                Our AI matcher reads this to connect you with camps whose needs fit what you can do.
+              </span>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block font-display font-semibold">WhatsApp number</span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                className={input}
+              />
+              <span className="mt-1 block text-xs text-mute">
+                Optional. When a camp needs what you offer, it can send you a WhatsApp request to confirm
+                you can help. Your number is never shown publicly — only signed-in coordinators and our
+                messaging service (Twilio) use it. Your email will be shown to camps as a contact.
+              </span>
+            </label>
+          </div>
         )}
         <input
           required

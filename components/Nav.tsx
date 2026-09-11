@@ -62,14 +62,14 @@ export default function Nav() {
           </span>
         ) : session ? (
           <div className="flex items-center gap-2">
-            <div className="hidden text-right text-xs md:block">
+            <Link href="/profile" className="hidden text-right text-xs hover:underline md:block">
               <div className="font-semibold text-ink">
                 {profile?.full_name || session.user.email}
               </div>
               <div className="text-mute">
                 {profile ? ROLE_LABELS[profile.role] : ""}
               </div>
-            </div>
+            </Link>
             <button
               onClick={signOut}
               className="border border-ink px-3 py-1.5 text-sm font-medium text-ink hover:bg-ink hover:text-canvas"

@@ -43,6 +43,80 @@ The engine lives in `lib/matching.ts` — plain, transparent math. No ML black b
    ```
    Open http://localhost:3000.
 
+## One-time setup: AI donor matching + WhatsApp outreach
+
+When a camp posts a need, Bridge-It asks Claude to read the need and every
+donor's free-text "what can you offer?" description, and shows a ranked list
+with a confidence score and a one-line reason for each donor. The coordinator
+ticks the donors to contact and Bridge-It sends each one a WhatsApp message
+through Twilio. Each part degrades gracefully, so nothing breaks the demo:
+
+| Missing | What happens |
+|---|---|
+| Migration | A setup banner appears; AI matching and outreach are off, everything else works |
+| `ANTHROPIC_API_KEY` | Donors are ranked by the tag-based matcher instead (the panel says so) |
+| Twilio credentials | Matching still works; the Notify button is disabled with a banner |
+
+### 1. Apply the database migration
+In Supabase → **SQL Editor**, run `supabase/migrations/001_llm_matching_outreach.sql`.
+It adds donor capability / phone / email fields, a description to needs, and
+the `outreach` log table. It also hides `phone_number` from anonymous visitors
+while keeping donor (NGO / camp) emails public.
+
+### 2. Create an Anthropic API key
+1. Sign in at [console.anthropic.com](https://console.anthropic.com) and add billing
+   credit (a demo costs cents).
+2. **API Keys → Create Key**, then add it to `.env.local`:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+   It's only read by server routes (`app/api/match-need`); never prefix it with
+   `NEXT_PUBLIC_` or it would be exposed to browsers.
+
+### 3. Create a free Twilio account and WhatsApp sandbox
+1. Sign up at [twilio.com](https://www.twilio.com/try-twilio) (the free trial credit covers a demo).
+2. In the Console, open **Messaging → Try it out → Send a WhatsApp message**.
+   The page shows the sandbox number (usually `+1 415 523 8886`) and a join
+   code like `join shadow-tiger`.
+3. From the Console dashboard copy the **Account SID** and **Auth Token** into `.env.local`:
+   ```
+   TWILIO_ACCOUNT_SID=AC...
+   TWILIO_AUTH_TOKEN=...
+   TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+   ```
+4. Restart `npm run dev` so the new variables load.
+
+### 4. ⚠️ Join the sandbox from every demo phone — easy to forget
+Twilio's sandbox **refuses to message any number that hasn't opted in first**.
+Before the demo, from **each phone number** on a donor account you plan to notify:
+
+1. Open WhatsApp and send the join code (e.g. `join shadow-tiger`) to the sandbox number.
+2. Wait for Twilio's "You are all set" reply.
+
+Two gotchas: sandbox membership **can expire after about 3 days**, and
+WhatsApp only allows free-form messages within **24 hours** of that phone's last
+message to the sandbox. So on demo day, re-send the join code from each phone.
+If a send fails, the panel shows Twilio's reason (error 63015 = number hasn't
+joined; 63016 = outside the 24-hour window).
+
+### 5. Seed demo donors and test
+```
+DEMO_WHATSAPP_PHONE=+919876543210 npx tsx scripts/seed-donors.ts
+npm run dev
+npx tsx scripts/verify-ai-outreach.ts
+```
+`seed-donors` creates five donors (pharmacy, water tankers, community kitchen,
+shelter supplies, boat rescue) and puts your number on the pharmacy donor.
+Existing NGO/camp users can add their own capability and WhatsApp number on
+their profile page (click your name in the nav). `scripts/test-capability-matching.ts`
+runs offline checks of the matcher and every fallback path.
+
+**Demo:** log in as a camp → Resources & Needs → "My camp needs" → describe the
+need in plain words (e.g. "elderly residents out of BP medicines, road flooded")
+→ **Post need**. The donor panel shows Claude's ranking and reasoning — note it
+can rank the boat team for access, which keyword matching would miss — then tick
+donors and **Notify selected via WhatsApp**.
+
 ## Demo script (for judging)
 
 1. **Problem flow:** Sign up as a *Citizen* → post "Ward 4 needs a medical camp"
@@ -63,12 +137,16 @@ The engine lives in `lib/matching.ts` — plain, transparent math. No ML black b
 - **Supabase** — Postgres + auth (free tier), row-level security enabled
 - **Leaflet + OpenStreetMap** — free maps, no API key
 - Matching: `lib/matching.ts` (haversine distance + weighted score + greedy allocation)
+- AI donor matching: `lib/capabilityMatching.ts` (Claude Opus 5 with structured
+  JSON output, validated; falls back to the tag-based scorer on any failure)
+- WhatsApp outreach: Twilio sandbox via `app/api/notify`, logged to `outreach`
 
 ## Deploy to Vercel (free)
 
 1. Push this repo to GitHub.
 2. [vercel.com](https://vercel.com) → New Project → import the repo.
-3. Add the two `NEXT_PUBLIC_SUPABASE_*` environment variables.
+3. Add the two `NEXT_PUBLIC_SUPABASE_*` environment variables, plus
+   `ANTHROPIC_API_KEY` and the three `TWILIO_*` values if you use AI matching and WhatsApp.
 4. Deploy — you get a public URL to show judges.
 
 ## Scalability story (for Q&A)

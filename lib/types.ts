@@ -9,6 +9,10 @@ export interface Profile {
   full_name: string;
   role: Role;
   org_name: string | null;
+  // Present once supabase/migrations/001 has been applied
+  capability_description?: string | null;
+  phone_number?: string | null;
+  email?: string | null;
 }
 
 export interface Camp {
@@ -65,8 +69,29 @@ export interface Need {
   unit: string;
   urgency: number;
   status: NeedStatus;
+  description?: string | null;
   created_at: string;
   camps?: Camp; // joined
+}
+
+export type OutreachStatus = "sent" | "failed" | "responded";
+
+/** One ranked donor for a need, as returned by /api/match-need. */
+export interface DonorMatch {
+  donorId: string;
+  name: string;
+  role: Role;
+  email: string | null;
+  confidence: number; // 0–100
+  reasoning: string;
+  hasPhone: boolean;
+}
+
+export interface MatchNeedResponse {
+  method: "llm" | "tag";
+  model?: string;
+  fallbackReason?: string;
+  matches: DonorMatch[];
 }
 
 export interface Match {
