@@ -11,14 +11,16 @@ import { Need, Camp, ScoreBreakdown } from "./types";
  * Score = (urgency points + population points) ÷ distance factor
  *   - urgency points:    up to 60 (urgency 1–5 → 12–60)
  *   - population points: up to 40 (camp population, capped at 5,000 people)
- *   - distance factor:   1 + km/50 — being far away shrinks the score,
- *                        but a critical camp still beats a nearby mild one.
+ *   - distance factor:   1 + km/600 — deliberately gentle. At state scale
+ *     (Jharkhand is ~350 km across) urgency and population must dominate;
+ *     distance only breaks ties. A critical camp 280 km away still beats a
+ *     mild camp next door — that's the whole point of the platform.
  */
 
 const URGENCY_WEIGHT = 60; // max points from urgency
 const POPULATION_WEIGHT = 40; // max points from population
 const POPULATION_CAP = 5000; // people; beyond this counts as "very large"
-const DISTANCE_SOFTENING_KM = 50; // 50 km away halves nothing drastic — factor 2 at 50km
+const DISTANCE_SOFTENING_KM = 600; // distance halves the score only at 600 km
 
 export function haversineKm(
   lat1: number, lng1: number, lat2: number, lng2: number
