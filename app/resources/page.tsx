@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -23,6 +23,10 @@ export default function ResourcesPage() {
   const [form, setForm] = useState<"none" | "resource" | "need">("none");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // independent type filters for the two lists
+  const [resourceTypeFilter, setResourceTypeFilter] = useState("all");
+  const [needTypeFilter, setNeedTypeFilter] = useState("all");
 
   // resource form state
   const [rType, setRType] = useState("water");
@@ -137,6 +141,18 @@ export default function ResourcesPage() {
 
   const typeLabel = (v: string) =>
     RESOURCE_TYPES.find((t) => t.value === v)?.label ?? v;
+
+  const visibleResources = useMemo(
+    () => resources.filter((r) => resourceTypeFilter === "all" || r.type === resourceTypeFilter),
+    [resources, resourceTypeFilter]
+  );
+  const visibleNeeds = useMemo(
+    () => needs.filter((n) => needTypeFilter === "all" || n.type === needTypeFilter),
+    [needs, needTypeFilter]
+  );
+
+  const filterSelect =
+    "rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm";
 
   return (
     <div>
@@ -263,12 +279,28 @@ export default function ResourcesPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 font-bold text-slate-900">📦 Available supplies</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="font-bold text-slate-900">📦 Available supplies</h2>
+            <select
+              value={resourceTypeFilter}
+              onChange={(e) => setResourceTypeFilter(e.target.value)}
+              className={filterSelect}
+            >
+              <option value="all">All types</option>
+              {RESOURCE_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-2">
-            {resources.length === 0 && (
-              <p className="text-sm text-slate-500">No supplies posted yet.</p>
+            {visibleResources.length === 0 && (
+              <p className="text-sm text-slate-500">
+                {resources.length === 0
+                  ? "No supplies posted yet."
+                  : `No ${typeLabel(resourceTypeFilter).toLowerCase()} supplies posted.`}
+              </p>
             )}
-            {resources.map((r) => (
+            {visibleResources.map((r) => (
               <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold capitalize">{typeLabel(r.type)}</span>
@@ -289,12 +321,28 @@ export default function ResourcesPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 font-bold text-slate-900">🆘 Camp needs</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="font-bold text-slate-900">🆘 Camp needs</h2>
+            <select
+              value={needTypeFilter}
+              onChange={(e) => setNeedTypeFilter(e.target.value)}
+              className={filterSelect}
+            >
+              <option value="all">All types</option>
+              {RESOURCE_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-2">
-            {needs.length === 0 && (
-              <p className="text-sm text-slate-500">No needs posted yet.</p>
+            {visibleNeeds.length === 0 && (
+              <p className="text-sm text-slate-500">
+                {needs.length === 0
+                  ? "No needs posted yet."
+                  : `No ${typeLabel(needTypeFilter).toLowerCase()} needs posted.`}
+              </p>
             )}
-            {needs.map((n) => (
+            {visibleNeeds.map((n) => (
               <div key={n.id} className="rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold capitalize">{typeLabel(n.type)}</span>
