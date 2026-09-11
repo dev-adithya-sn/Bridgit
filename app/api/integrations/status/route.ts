@@ -17,7 +17,7 @@ export async function GET() {
   }
 
   return Response.json({
-    llm: !!process.env.ANTHROPIC_API_KEY?.trim(),
+    llm: !!process.env.GEMINI_API_KEY?.trim(),
     twilio: twilioConfig() !== null,
     migration,
   });

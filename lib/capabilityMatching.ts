@@ -1,24 +1,20 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { scoreNeed } from "./matching";
 import { MAX_CAPABILITY_CHARS } from "./capabilityLimits";
+import { AiUnavailable, DEFAULT_AI_TIMEOUT_MS, describeAiFailure, GEMINI_MODEL, generateJson } from "./gemini";
 import type { Camp, DonorMatch, MatchNeedResponse, Need, Resource, Role } from "./types";
 import { URGENCY_LABELS } from "./types";
 
 /**
  * Free-text capability matching: ranks donor organisations for one need.
  *
- * Primary path — Claude reads the need and every donor's self-written
+ * Primary path — Gemini reads the need and every donor's self-written
  * capability description and returns a ranked list with a confidence and a
  * one-sentence reason per donor.
  * Fallback path — if there is no API key, or the call fails, times out, is
- * refused, or returns output that doesn't validate, donors are ranked with
+ * blocked, or returns output that doesn't validate, donors are ranked with
  * the existing tag-based scorer in lib/matching.ts instead.
  */
-
-export const LLM_MODEL = "claude-opus-5";
-const LLM_TIMEOUT_MS = 20_000;
 
 export type NeedWithCamp = Need & { camps: Camp };
 
@@ -41,8 +37,25 @@ const RankingSchema = z.object({
   ),
 });
 
-/** Thrown for LLM outcomes we deliberately treat as "use the fallback". */
-export class LlmFallback extends Error {}
+// JSON schema sent to Gemini so it replies in exactly this shape
+const RANKING_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    matches: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          donor_id: { type: "string" },
+          confidence: { type: "integer", minimum: 0, maximum: 100 },
+          reasoning: { type: "string" },
+        },
+        required: ["donor_id", "confidence", "reasoning"],
+      },
+    },
+  },
+  required: ["matches"],
+};
 
 const SYSTEM_PROMPT = `You match disaster-relief needs in Jharkhand, India, to donor organisations that can help.
 
@@ -83,11 +96,11 @@ Use each donor's id exactly as given for donor_id.`;
 /**
  * Defensive validation of the model's ranking: drops unknown or duplicate
  * donor ids, clamps confidence to 0–100, and sorts by confidence.
- * Throws LlmFallback if the shape is wrong.
+ * Throws AiUnavailable if the shape is wrong.
  */
 export function validateRanking(raw: unknown, donors: Donor[]): DonorMatch[] {
   const parsed = RankingSchema.safeParse(raw);
-  if (!parsed.success) throw new LlmFallback("model output did not match the expected JSON shape");
+  if (!parsed.success) throw new AiUnavailable("model output did not match the expected JSON shape");
 
   const byId = new Map(donors.map((d) => [d.id, d]));
   const seen = new Set<string>();
@@ -113,24 +126,16 @@ export async function rankWithLLM(
   need: NeedWithCamp,
   donors: Donor[],
   apiKey: string,
-  timeoutMs = LLM_TIMEOUT_MS
+  timeoutMs = DEFAULT_AI_TIMEOUT_MS
 ): Promise<DonorMatch[]> {
-  const client = new Anthropic({ apiKey, timeout: timeoutMs, maxRetries: 1 });
-  const response = await client.beta.messages.parse({
-    model: LLM_MODEL,
-    max_tokens: 8000,
-    // If Claude Opus 5 declines, the API re-runs the request on a fallback model.
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { effort: "low", format: betaZodOutputFormat(RankingSchema) },
+  const raw = await generateJson({
+    apiKey,
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildPrompt(need, donors) }],
+    prompt: buildPrompt(need, donors),
+    jsonSchema: RANKING_JSON_SCHEMA,
+    timeoutMs,
   });
-
-  if (response.stop_reason === "refusal") throw new LlmFallback("model declined the request");
-  if (response.stop_reason === "max_tokens") throw new LlmFallback("model output was cut off");
-  if (!response.parsed_output) throw new LlmFallback("model output was not valid JSON");
-  return validateRanking(response.parsed_output, donors);
+  return validateRanking(raw, donors);
 }
 
 // Words that signal a donor can help with each resource type.
@@ -188,16 +193,6 @@ export function rankWithTags(need: NeedWithCamp, donors: Donor[], resources: Res
   return matches.sort((a, b) => b.confidence - a.confidence);
 }
 
-function describeFailure(error: unknown, timeoutMs: number): string {
-  if (error instanceof LlmFallback) return error.message;
-  if (error instanceof Anthropic.APIConnectionTimeoutError) return `AI request timed out after ${timeoutMs / 1000}s`;
-  if (error instanceof Anthropic.AuthenticationError) return "ANTHROPIC_API_KEY was rejected";
-  if (error instanceof Anthropic.RateLimitError) return "AI rate limit reached";
-  if (error instanceof Anthropic.APIConnectionError) return "could not reach the AI service";
-  if (error instanceof Anthropic.APIError) return `AI service error (HTTP ${error.status})`;
-  return "unexpected error while ranking";
-}
-
 export async function matchNeed(input: {
   need: NeedWithCamp;
   donors: Donor[];
@@ -206,7 +201,7 @@ export async function matchNeed(input: {
   timeoutMs?: number;
   ranker?: typeof rankWithLLM;
 }): Promise<MatchNeedResponse> {
-  const { need, donors, resources, apiKey, timeoutMs = LLM_TIMEOUT_MS, ranker = rankWithLLM } = input;
+  const { need, donors, resources, apiKey, timeoutMs = DEFAULT_AI_TIMEOUT_MS, ranker = rankWithLLM } = input;
   const started = Date.now();
 
   const fallback = (reason: string): MatchNeedResponse => {
@@ -218,16 +213,16 @@ export async function matchNeed(input: {
   };
 
   if (donors.length === 0) return fallback("no donors have described their capabilities yet");
-  if (!apiKey) return fallback("ANTHROPIC_API_KEY is not set");
+  if (!apiKey) return fallback("GEMINI_API_KEY is not set");
 
   try {
     const matches = await ranker(need, donors, apiKey, timeoutMs);
-    if (matches.length === 0) throw new LlmFallback("model returned no usable matches");
+    if (matches.length === 0) throw new AiUnavailable("model returned no usable matches");
     console.log(
-      `[match-need] path=llm model=${LLM_MODEL} need=${need.id} donors=${donors.length} matches=${matches.length} ms=${Date.now() - started}`
+      `[match-need] path=llm model=${GEMINI_MODEL} need=${need.id} donors=${donors.length} matches=${matches.length} ms=${Date.now() - started}`
     );
-    return { method: "llm", model: LLM_MODEL, matches };
+    return { method: "llm", model: GEMINI_MODEL, matches };
   } catch (error) {
-    return fallback(describeFailure(error, timeoutMs));
+    return fallback(describeAiFailure(error));
   }
 }

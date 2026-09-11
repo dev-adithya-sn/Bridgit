@@ -108,7 +108,7 @@ export default function DonorMatchPanel({
           {result &&
             (result.method === "llm" ? (
               <span className="bg-canvas px-2 py-0.5 font-display text-xs font-bold text-ink">
-                AI-ranked · Claude Opus 5
+                AI-ranked · Gemini
               </span>
             ) : (
               <span className="border border-dashed border-canvas px-2 py-0.5 font-display text-xs font-bold">

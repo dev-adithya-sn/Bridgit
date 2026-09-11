@@ -5,6 +5,8 @@ import { bearerToken, isMissingSchemaError, MIGRATION_HINT, supabaseAsUser } fro
 import { URGENCY_LABELS } from "@/lib/types";
 
 export const runtime = "nodejs";
+// Room for the Twilio send plus the status re-check on Vercel
+export const maxDuration = 30;
 
 // Twilio accepts a message first and can reject it moments later (e.g. the
 // number never joined the sandbox), so we check its status once after this.

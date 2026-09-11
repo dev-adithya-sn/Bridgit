@@ -3,6 +3,8 @@ import { bearerToken, isMissingSchemaError, MIGRATION_HINT, supabaseAsUser } fro
 import type { Resource, Role } from "@/lib/types";
 
 export const runtime = "nodejs";
+// Room for the AI call on Vercel (its default limit can be shorter)
+export const maxDuration = 30;
 
 interface DonorRow {
   id: string;
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
     need: need as NeedWithCamp,
     donors,
     resources,
-    apiKey: process.env.ANTHROPIC_API_KEY,
+    apiKey: process.env.GEMINI_API_KEY,
   });
   return Response.json(result);
 }

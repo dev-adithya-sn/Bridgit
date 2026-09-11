@@ -18,7 +18,7 @@ export default function IntegrationNotice({ status }: { status: IntegrationStatu
         )}
         {!status.llm && (
           <li>
-            No <code className="bg-ink px-1 text-canvas">ANTHROPIC_API_KEY</code> — donors are ranked with the
+            No <code className="bg-ink px-1 text-canvas">GEMINI_API_KEY</code> — donors are ranked with the
             tag-based fallback instead of AI.
           </li>
         )}

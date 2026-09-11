@@ -2,10 +2,11 @@
  * Offline checks for lib/capabilityMatching.ts — no database needed.
  * Covers output validation, the tag-based fallback, and every fallback
  * trigger (no key, rejected key, timeout, malformed / empty model output).
- * The rejected-key and timeout cases make real calls to the Anthropic API.
+ * The rejected-key and timeout cases make real calls to the Gemini API.
  * Run: npx tsx scripts/test-capability-matching.ts
  */
-import { matchNeed, rankWithTags, validateRanking, LlmFallback, Donor, NeedWithCamp } from "../lib/capabilityMatching";
+import { matchNeed, rankWithTags, validateRanking, Donor, NeedWithCamp } from "../lib/capabilityMatching";
+import { AiUnavailable } from "../lib/gemini";
 import type { Resource } from "../lib/types";
 
 let failures = 0;
@@ -61,9 +62,9 @@ async function main() {
   try {
     validateRanking({ matches: "not an array" }, donors);
   } catch (e) {
-    threw = e instanceof LlmFallback;
+    threw = e instanceof AiUnavailable;
   }
-  check("validate: malformed JSON shape throws LlmFallback", threw);
+  check("validate: malformed JSON shape throws AiUnavailable", threw);
 
   // ---- tag-based fallback (uses lib/matching.ts scoreNeed) ----
   const tags = rankWithTags(need, donors, resources);

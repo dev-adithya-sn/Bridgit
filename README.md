@@ -45,7 +45,7 @@ The engine lives in `lib/matching.ts` — plain, transparent math. No ML black b
 
 ## One-time setup: AI donor matching + WhatsApp outreach
 
-When a camp posts a need, Bridge-It asks Claude to read the need and every
+When a camp posts a need, Bridge-It asks Google Gemini to read the need and every
 donor's free-text "what can you offer?" description, and shows a ranked list
 with a confidence score and a one-line reason for each donor. The coordinator
 ticks the donors to contact and Bridge-It sends each one a WhatsApp message
@@ -54,7 +54,7 @@ through Twilio. Each part degrades gracefully, so nothing breaks the demo:
 | Missing | What happens |
 |---|---|
 | Migration | A setup banner appears; AI matching and outreach are off, everything else works |
-| `ANTHROPIC_API_KEY` | Donors are ranked by the tag-based matcher instead (the panel says so) |
+| `GEMINI_API_KEY` | Donors are ranked by the tag-based matcher instead (the panel says so) |
 | Twilio credentials | Matching still works; the Notify button is disabled with a banner |
 
 ### 1. Apply the database migration
@@ -63,15 +63,21 @@ It adds donor capability / phone / email fields, a description to needs, and
 the `outreach` log table. It also hides `phone_number` from anonymous visitors
 while keeping donor (NGO / camp) emails public.
 
-### 2. Create an Anthropic API key
-1. Sign in at [console.anthropic.com](https://console.anthropic.com) and add billing
-   credit (a demo costs cents).
-2. **API Keys → Create Key**, then add it to `.env.local`:
+### 2. Create a free Gemini API key
+1. Sign in with a Google account at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+2. **Create API key** (no billing needed — the free tier covers a demo), then add it to `.env.local`:
    ```
-   ANTHROPIC_API_KEY=sk-ant-...
+   GEMINI_API_KEY=...
    ```
-   It's only read by server routes (`app/api/match-need`); never prefix it with
-   `NEXT_PUBLIC_` or it would be exposed to browsers.
+   It's only read by server routes; never prefix it with `NEXT_PUBLIC_` or it
+   would be exposed to browsers. The default model is `gemini-3.8-flash`; if
+   Google retires it, set `GEMINI_MODEL=gemini-2.5-flash` (or another free model).
+3. **Privacy note:** on Gemini's free tier, Google may use request content to
+   improve its products. Bridge-It only sends the need description and donors'
+   names and capability text — never phone numbers or emails. Switch the key to
+   a paid Google project if that matters for real deployments.
+4. The free tier is rate-limited (requests per minute/day). If a limit is hit,
+   matching quietly falls back to the tag-based ranking.
 
 ### 3. Create a free Twilio account and WhatsApp sandbox
 1. Sign up at [twilio.com](https://www.twilio.com/try-twilio) (the free trial credit covers a demo).
@@ -113,7 +119,7 @@ runs offline checks of the matcher and every fallback path.
 
 **Demo:** log in as a camp → Resources & Needs → "My camp needs" → describe the
 need in plain words (e.g. "elderly residents out of BP medicines, road flooded")
-→ **Post need**. The donor panel shows Claude's ranking and reasoning — note it
+→ **Post need**. The donor panel shows Gemini's ranking and reasoning — note it
 can rank the boat team for access, which keyword matching would miss — then tick
 donors and **Notify selected via WhatsApp**.
 
@@ -137,8 +143,8 @@ donors and **Notify selected via WhatsApp**.
 - **Supabase** — Postgres + auth (free tier), row-level security enabled
 - **Leaflet + OpenStreetMap** — free maps, no API key
 - Matching: `lib/matching.ts` (haversine distance + weighted score + greedy allocation)
-- AI donor matching: `lib/capabilityMatching.ts` (Claude Opus 5 with structured
-  JSON output, validated; falls back to the tag-based scorer on any failure)
+- AI donor matching: `lib/capabilityMatching.ts` (Google Gemini free tier with
+  JSON-schema output, validated; falls back to the tag-based scorer on any failure)
 - WhatsApp outreach: Twilio sandbox via `app/api/notify`, logged to `outreach`
 
 ## Deploy to Vercel (free)
@@ -146,7 +152,7 @@ donors and **Notify selected via WhatsApp**.
 1. Push this repo to GitHub.
 2. [vercel.com](https://vercel.com) → New Project → import the repo.
 3. Add the two `NEXT_PUBLIC_SUPABASE_*` environment variables, plus
-   `ANTHROPIC_API_KEY` and the three `TWILIO_*` values if you use AI matching and WhatsApp.
+   `GEMINI_API_KEY` and the three `TWILIO_*` values if you use AI matching and WhatsApp.
 4. Deploy — you get a public URL to show judges.
 
 ## Scalability story (for Q&A)
