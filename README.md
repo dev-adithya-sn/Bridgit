@@ -1,4 +1,4 @@
-# SahayataSetu — Disaster Response Platform for Jharkhand
+# Bridge-It — Disaster Response Platform for Jharkhand
 
 **Smart India Hackathon 2026 · PS #43 (SIH26043) · Govt. of Jharkhand**
 
@@ -10,7 +10,7 @@ matching engine that routes relief supplies to the camps that need them **most**
 ## The differentiator
 
 A donor posts 1,000 water bottles. A plain app sends them to the nearest camp.
-SahayataSetu scores **every** open need:
+Bridge-It scores **every** open need:
 
 ```
 score = (urgency points + population points) ÷ (1 + distance_km / 600)

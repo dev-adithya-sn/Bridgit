@@ -35,10 +35,10 @@ export default function Nav() {
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-bold text-ink">
           <span className="flex h-8 w-8 items-center justify-center bg-ink font-display text-sm text-canvas">
-            JH
+            B
           </span>
           <span className="hidden font-display text-lg tracking-wide sm:block">
-            SahayataSetu
+            Bridge-It
           </span>
         </Link>
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">

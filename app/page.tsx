@@ -45,7 +45,7 @@ export default function Home() {
           Help should go where it&apos;s needed most — not just nearest.
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-mute">
-          SahayataSetu crowdsources real problems during a disaster and
+          Bridge-It crowdsources real problems during a disaster and
           intelligently matches relief supplies to the camps that need them most,
           using urgency, population affected and distance.
         </p>
@@ -110,7 +110,7 @@ export default function Home() {
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-canvas/70">
             A donor posts 1,000 water bottles. A plain app sends them to the
-            nearest camp. SahayataSetu scores <em>every</em> camp —{" "}
+            nearest camp. Bridge-It scores <em>every</em> camp —{" "}
             <span className="font-mono text-canvas">
               urgency × population ÷ distance
             </span>{" "}
